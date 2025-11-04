@@ -2,6 +2,7 @@
   font-family: 'Times New Roman', Times, serif;
 }
 
+/* === Resto de estilos generales (sin cambios) === */
 .announcement-bar { 
   background-color: #ffe4f4;
   color: #522b0b;
@@ -9,22 +10,68 @@
   padding: 10px 0;
 }
 
-.hero-header{
+.hero-header {
   position: relative;
   height: 180px;
   background-image: url("../images/press\ on.jpg");
   background-repeat: no-repeat;
   background-size: cover;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  padding: 15px 20px;
 }
 
 .site-logo {
-  max-width: 300px;
-  width: 80%;
+  max-width: 230px;
+  width: auto;
   height: auto;
 }
 
-.login-icons a{
+.login-icons {
+  position: absolute;
+  top: 0;
+  right: 0;
+  padding: 20px;
+}
+
+.login-icons a {
   color: #522b0b;
+  display: inline-block;
+  padding: 8px 15px;
+  margin: 5px 0;
+  background-color: #ffe4f4;
+  border-radius: 25px;
+  text-decoration: none;
+  transition: all 0.3s ease;
+}
+
+.login-icons a:hover {
+  background-color: #ffd4f0;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.logged-in-user {
+  background-color: #ffe4f4;
+  border-radius: 25px;
+  padding: 8px 15px;
+  text-align: center;
+  min-width: 120px;
+}
+
+.logged-in-user .btn {
+  background-color: #522b0b;
+  color: #fff;
+  border-color: #522b0b;
+  padding: 2px 8px;
+  font-size: 0.8rem;
+}
+
+.logged-in-user .btn:hover {
+  background-color: #3a1f0d;
+  border-color: #3a1f0d;
 }
 
 .oso-container {
@@ -36,7 +83,7 @@
 }
 
 .oso-container img {
-  width: 110%;
+  width: 100%;
   height: auto;
   display: block;
 }
@@ -48,7 +95,7 @@
   transform: translateX(-50%);
   background-color: #ffe4f4;
   color: #522b0b;
-  border-radius: 25px solid;
+  border-radius: 25px;
   padding: 8px 25px;
   font-weight: bold;
   z-index: 10;
@@ -56,7 +103,7 @@
 
 .main-container {
   padding-left: 0;
-  padding-right: 0%;
+  padding-right: 0;
   max-width: 100%;
 }
 
@@ -66,10 +113,6 @@
 
 .home-page .site-logo {
   max-width: 250px;
-}
-
-.body {
-  overflow-x: hidden;
 }
 
 .main {
@@ -88,7 +131,7 @@
   border: 5px solid #ffe4f4;
   border-radius: 12px;
   overflow: hidden;
-  transition: transform 0.3s ease, box-shadow 0.3 ease;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
 
 .card:hover {
@@ -101,80 +144,32 @@
   font-weight: bold;
 }
 
-/* TIENDA STYLES */
-.tienda-container {
-  display: grid;
-  grid-template-columns: 250px 1fr;
-  gap: 30px;
-  padding: 20px;
-  max-width: 1400px;
-  margin: 0 auto;
+/* === TIENDA - ESTILO ONCITY === */
+body .container-fluid, body .container {
+  padding-left: 0;
+  padding-right: 0;
 }
 
-.productos-grid {
-  display: grid; 
-  grid-template-columns: repeat(3, 1fr);
+.tienda-container {
+  display: flex;
+  flex-direction: column;
   gap: 20px;
   padding: 20px;
-}
-
-.producto-card {
-  background: white;
-  border-radius: 10px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-  padding: 15px; 
-  text-align: left;
-  transition: transform 0.3s ease;
-}
-
-.producto-card:hover {
-  transform: translateY(-5px);
-}
-
-.producto-imagen {
   width: 100%;
-  height: 200px;
-  object-fit: cover;
-  border-radius: 8px;
-  margin-bottom: 10px;
-  cursor: pointer;
+  max-width: 1400px;
+  margin: 0 auto;
+  box-sizing: border-box;
 }
 
-.producto-nombre {
-  font-size: 14px;
-  color: #522b0b; 
-  background-color: rgba(255, 228, 244, 0.9);
-  width: fit-content;
-  padding: 2px 8px;
-  border-radius: 3px;
-  margin-bottom: 5px;
-  font-weight: bold;
-  cursor: pointer;
-}
-
-.producto-precio {
-  font-size: 16px;
-  color: #522b0b;
-  background-color: rgba(255, 228, 244, 0.9);
-  width: fit-content;
-  padding: 2px 10px;
-  border-radius: 3px;
-  font-weight: bold;
-  margin-bottom: 8px;
-}
-
-.producto-detalles {
-  font-size: 13px;
-  color: #522b0b;
-  line-height: 1.5;
-  margin-bottom: 10px;
+.tienda-container aside {
+  display: none;
 }
 
 .tienda-header {
   background: linear-gradient(135deg, #ffe4f4, #ffcce6);
   padding: 15px 30px;
   border-radius: 10px;
-  margin-bottom: 30px;
+  margin-bottom: 20px;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -242,6 +237,137 @@
   border: 2px solid white;
 }
 
+/* === GRID DE PRODUCTOS - ESTILO ONCITY === */
+.productos-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 18px;
+  padding: 15px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.producto-card {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  height: 320px; /* Fixed height for all cards */
+}
+
+.producto-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+}
+
+.producto-imagen-container {
+  position: relative;
+  width: 100%;
+  height: 200px;
+  background: #f8f9fa;
+  overflow: hidden;
+  flex: 0 0 auto; /* Prevents flex shrinking */
+}
+
+.producto-imagen {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  transition: transform 0.3s ease;
+}
+
+.producto-imagen:hover {
+  transform: scale(1.05);
+}
+
+.producto-imagen-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #522b0b;
+  background-color: #f8f9fa;
+  font-size: 14px;
+}
+
+.etiqueta-descuento {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: #ff4444;
+  color: white;
+  font-size: 12px;
+  font-weight: bold;
+  padding: 4px 10px;
+  border-radius: 50px;
+  z-index: 2;
+}
+
+.producto-info {
+  padding: 14px 12px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.producto-nombre {
+  font-size: 15px;
+  color: #522b0b;
+  font-weight: bold;
+  margin: 0;
+  line-height: 1.3;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.producto-precios {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.precio-original {
+  font-size: 14px;
+  color: #999;
+  text-decoration: line-through;
+}
+
+.precio-final {
+  font-size: 17px;
+  color: #522b0b;
+  font-weight: bold;
+}
+
+.btn-agregar-carrito {
+  background: #ffe4f4;
+  border: 2px solid #ffe4f4;
+  color: #522b0b;
+  padding: 8px 0;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: bold;
+  font-size: 14px;
+  text-align: center;
+  transition: all 0.2s;
+  margin-top: 4px;
+}
+
+.btn-agregar-carrito:hover {
+  background: #ffd4f0;
+  transform: translateY(-1px);
+  border-color: #ffd4f0;
+}
+
+/* === MODALES (sin cambios) === */
 .modal {
   display: none;
   position: fixed;
@@ -464,4 +590,94 @@
 .btn-comprar:hover {
   background: #ffd4f0;
   transform: translateY(-2px);
+}
+
+/* === MEDIA QUERIES === */
+@media (max-width: 768px) {
+  .tienda-header {
+    flex-direction: column;
+    gap: 10px;
+    text-align: center;
+    padding: 15px;
+  }
+
+  .productos-grid {
+    grid-template-columns: repeat(2, 1fr); /* Exactly 2 columns on mobile */
+    gap: 14px;
+    padding: 10px;
+  }
+
+  .producto-card {
+    height: 280px; /* Fixed height for mobile cards */
+  }
+
+  .producto-imagen-container {
+    height: 150px; /* Slightly smaller images for 2-column grid */
+    flex: 0 0 auto;
+  }
+
+  .producto-info {
+    flex: 1; /* Take remaining space */
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+
+  .producto-nombre {
+    font-size: 14px;
+  }
+
+  .precio-final {
+    font-size: 16px;
+  }
+
+  .btn-agregar-carrito {
+    font-size: 13px;
+    padding: 7px 0;
+    margin-top: auto; /* Push button to bottom */
+  }
+}
+
+@media (max-width: 480px) {
+  .productos-grid {
+    grid-template-columns: repeat(2, 1fr); /* Keep 2 columns even on very small screens */
+    padding: 10px 8px;
+  }
+
+  .producto-card {
+    height: 260px; /* Fixed height for very small mobile cards */
+  }
+
+  .producto-imagen-container {
+    height: 120px; /* Even smaller images for very small screens */
+    flex: 0 0 auto;
+  }
+
+  .producto-info {
+    flex: 1; /* Take remaining space */
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+
+  .btn-agregar-carrito {
+    margin-top: auto; /* Push button to bottom */
+  }
+}
+
+/* === Resto de estilos generales === */
+html, body {
+  height: 100%;
+}
+
+main {
+  min-height: calc(100vh - 180px);
+  width: 100%;
+  box-sizing: border-box;
+}
+
+@media (max-width: 768px) {
+  main {
+    min-height: calc(100vh - 120px);
+  }
 }

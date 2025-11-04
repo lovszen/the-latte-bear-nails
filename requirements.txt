@@ -1,0 +1,5 @@
+Django==5.2.7
+Pillow==10.4.0
+django-bootstrap5==24.2
+django-allauth==64.2.1
+reportlab==4.4.4

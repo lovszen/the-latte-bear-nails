@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="tienda-container">
+    <main>
+        <div class="tienda-header">
+            <h1 class="tienda-titulo">Mis Presupuestos</h1>
+            <a href="{% url 'create_budget' %}" class="btn btn-primary">Crear Nuevo Presupuesto</a>
+        </div>
+        
+        {% if budgets %}
+        <div class="productos-grid">
+            {% for budget in budgets %}
+            <div class="producto-card">
+                <div class="producto-info">
+                    <h3 class="producto-nombre">{{ budget.title }}</h3>
+                    <div class="producto-precios">
+                        <div><strong>Cliente:</strong> {{ budget.customer_name }}</div>
+                        <div><strong>Email:</strong> {{ budget.customer_email }}</div>
+                        <div><strong>Fecha:</strong> {{ budget.created_at|date:"d/m/Y" }}</div>
+                        <div><strong>Total:</strong> ${{ budget.total_amount }}</div>
+                    </div>
+                    <div class="d-flex gap-2 mt-2">
+                        <a href="{% url 'view_budget' budget.id %}" class="btn btn-primary">Ver Detalles</a>
+                        <a href="{% url 'edit_budget' budget.id %}" class="btn btn-warning">Editar</a>
+                        <a href="{% url 'delete_budget' budget.id %}" class="btn btn-danger">Eliminar</a>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="alert alert-info text-center">
+            <h4>No tienes presupuestos creados aún.</h4>
+            <p>Comienza creando tu primer presupuesto.</p>
+            <a href="{% url 'create_budget' %}" class="btn btn-primary">Crear tu primer presupuesto</a>
+        </div>
+        {% endif %}
+    </main>
+</div>
+{% endblock %}

@@ -118,14 +118,14 @@ function eliminarItemCarrito(productoId) {
 function cambiarCantidad(productoId, cambio) {
     const item = carrito.find(item => item.id === productoId);
     if (item) {
-        item.cantidad += cambio;
-        if (item.cantidad <= 0) {
-            eliminarItemCarrito(productoId);
+        if (item.cantidad + cambio >= 1) {
+            item.cantidad += cambio;
         } else {
-            actualizarCarrito();
-            if (document.getElementById('modalCarrito').classList.contains('mostrar')) {
-                mostrarCarrito();
-            }
+            item.cantidad = 1;
+        }
+        actualizarCarrito();
+        if (document.getElementById('modalCarrito').classList.contains('mostrar')) {
+            mostrarCarrito();
         }
     }
 }

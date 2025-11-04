@@ -1,0 +1,291 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Tienda · The Latte Bear Nails{% endblock %}
+
+{% block content %}
+<div class="tienda-container">
+    <aside class="menu-lateral"></aside>
+
+    <main>
+        <div class="tienda-header">
+            <h1 class="tienda-titulo">Nuestra Tienda</h1>
+            
+            <div class="tienda-iconos">
+                <div class="icono-chat-user" title="Chat con nosotros">
+                    <i class="fas fa-comment-dots"></i>
+                </div>
+                <div class="icono-chat-bot" title="Chat Bot">
+                    <i class="fas fa-robot"></i>
+                </div>
+                
+                <div class="icono-carrito" title="Carrito de compras">
+                    <i class="fas fa-shopping-bag"></i>
+                    <span class="contador-carrito" id="contador-carrito">0</span>
+                </div>
+            </div>
+        </div>
+        
+        {% if productos %}
+        <div class="productos-grid">
+            {% for producto in productos %}
+            <div class="producto-card">
+                <div class="producto-imagen-container">
+                    {% if producto.imagen %}
+                        <img src="{{ producto.imagen.url }}" class="producto-imagen" alt="{{ producto.nombre }}">
+                    {% else %}
+                        <div class="producto-imagen-placeholder">
+                            Sin Imagen
+                        </div>
+                    {% endif %}
+
+                    <!-- Etiqueta de descuento (opcional - descomenta cuando lo tengas) -->
+                    <!--
+                    {% if producto.descuento and producto.descuento > 0 %}
+                        <span class="etiqueta-descuento">-{{ producto.descuento }}%</span>
+                    {% endif %}
+                    -->
+                </div>
+
+                <div class="producto-info">
+                    <h3 class="producto-nombre">{{ producto.nombre }}</h3>
+
+                    <div class="producto-precios">
+                        <!-- Precio original (opcional)
+                        {% if producto.precio_original and producto.precio_original != producto.precio %}
+                            <span class="precio-original">${{ producto.precio_original }}</span>
+                        {% endif %}
+                        -->
+                        <span class="precio-final">${{ producto.precio }}</span>
+                    </div>
+
+                    <button class="btn-agregar-carrito"
+                            data-producto-id="{{ producto.id }}"
+                            data-producto-nombre="{{ producto.nombre }}"
+                            data-producto-precio="{{ producto.precio }}">
+                        Agregar al Carrito
+                    </button>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="alert alert-info text-center">
+            <h4>No hay productos disponibles en este momento</h4>
+            <p>Vuelve pronto para ver las novedades.</p>
+        </div>
+        {% endif %}
+    </main>
+</div>
+
+<!-- Modales (sin cambios) -->
+<div id="modalProducto" class="modal">
+    <div class="modal-contenido" style="max-width: 800px;">
+        <button class="cerrar-modal">&times;</button>
+        <div class="producto-detalle" id="contenidoProducto"></div>
+    </div>
+</div>
+
+<div id="modalCarrito" class="modal">
+    <div class="modal-contenido" style="max-width: 700px;">
+        <button class="cerrar-modal">&times;</button>
+        <h2 class="carrito-titulo">Tu Carrito</h2>
+        <div id="contenidoCarrito"></div>
+        <div class="budget-actions mt-3">
+            <button id="create-budget-btn" class="btn btn-success" style="display: none;">Crear Presupuesto</button>
+            <button id="send-budget-email-btn" class="btn btn-primary" style="display: none;">Enviar Presupuesto por Email</button>
+        </div>
+    </div>
+</div>
+
+<!-- Budget Creation Modal -->
+<div id="modalCrearPresupuesto" class="modal">
+    <div class="modal-contenido" style="max-width: 600px;">
+        <button class="cerrar-modal">&times;</button>
+        <h2 class="carrito-titulo">Crear Presupuesto</h2>
+        <form id="budgetForm">
+            {% csrf_token %}
+            <div class="mb-3">
+                <label for="budgetTitle" class="form-label">Título del Presupuesto</label>
+                <input type="text" class="form-control" id="budgetTitle" name="title" required>
+            </div>
+            
+            <div class="mb-3">
+                <label for="customerName" class="form-label">Nombre del Cliente</label>
+                <input type="text" class="form-control" id="customerName" name="customer_name" required>
+            </div>
+            
+            <div class="mb-3">
+                <label>El presupuesto se enviará a:</label>
+                <p class="form-control-plaintext">{{ user.email|default:"No registrado" }}</p>
+            </div>
+            
+            <div id="cart-items-container"></div>
+            
+            <button type="submit" class="btn btn-primary">Crear Presupuesto y Enviar por Email</button>
+        </form>
+    </div>
+</div>
+
+<script src="{% static 'js/carrito.js' %}"></script>
+<script>
+    function updateBudgetButtonVisibility() {
+        const cartItems = JSON.parse(localStorage.getItem('carrito') || '[]');
+        const createBudgetBtn = document.getElementById('create-budget-btn');
+        const sendEmailBtn = document.getElementById('send-budget-email-btn');
+        
+        if (cartItems.length > 0) {
+            createBudgetBtn.style.display = 'block';
+            sendEmailBtn.style.display = 'block';
+        } else {
+            createBudgetBtn.style.display = 'none';
+            sendEmailBtn.style.display = 'none';
+        }
+    }
+    
+    function actualizarCarritoDisplay() {
+        if (typeof mostrarCarrito === 'function') {
+            mostrarCarrito();
+        }
+        updateBudgetButtonVisibility();
+    }
+    
+    document.getElementById('create-budget-btn').addEventListener('click', function() {
+        document.querySelectorAll('.modal').forEach(modal => {
+            modal.classList.remove('mostrar');
+        });
+        
+        document.getElementById('modalCrearPresupuesto').classList.add('mostrar');
+        
+        const cartItems = JSON.parse(localStorage.getItem('carrito') || '[]');
+        if (cartItems.length > 0) {
+            document.getElementById('cart-items-container').innerHTML = '';
+            
+            document.getElementById('budgetTitle').value = '';
+            document.getElementById('customerName').value = '';
+            
+            cartItems.forEach(item => {
+                const productInput = document.createElement('input');
+                productInput.type = 'hidden';
+                productInput.name = 'product_ids';
+                productInput.value = item.id;
+                
+                const quantityInput = document.createElement('input');
+                quantityInput.type = 'hidden';
+                quantityInput.name = 'quantities';
+                quantityInput.value = item.cantidad;
+                
+                document.getElementById('cart-items-container').appendChild(productInput);
+                document.getElementById('cart-items-container').appendChild(quantityInput);
+            });
+        }
+    });
+    
+    document.getElementById('send-budget-email-btn').addEventListener('click', function() {
+        document.querySelectorAll('.modal').forEach(modal => {
+            modal.classList.remove('mostrar');
+        });
+        
+        document.getElementById('modalCrearPresupuesto').classList.add('mostrar');
+        
+        document.querySelector('.carrito-titulo').textContent = 'Enviar Presupuesto por Email';
+        
+        const cartItems = JSON.parse(localStorage.getItem('carrito') || '[]');
+        if (cartItems.length > 0) {
+            document.getElementById('cart-items-container').innerHTML = '';
+            
+            document.getElementById('budgetTitle').value = '';
+            document.getElementById('customerName').value = '';
+            
+            cartItems.forEach(item => {
+                const productInput = document.createElement('input');
+                productInput.type = 'hidden';
+                productInput.name = 'product_ids';
+                productInput.value = item.id;
+                
+                const quantityInput = document.createElement('input');
+                quantityInput.type = 'hidden';
+                quantityInput.name = 'quantities';
+                quantityInput.value = item.cantidad;
+                
+                document.getElementById('cart-items-container').appendChild(productInput);
+                document.getElementById('cart-items-container').appendChild(quantityInput);
+            });
+        }
+    });
+    
+    document.getElementById('budgetForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const formData = new FormData(this);
+        
+        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+        formData.append('csrfmiddlewaretoken', csrfToken);
+        
+        const productInputs = document.querySelectorAll('#cart-items-container input[name="product_ids"]');
+        const quantityInputs = document.querySelectorAll('#cart-items-container input[name="quantities"]');
+        
+        const productIds = Array.from(productInputs).map(input => input.value);
+        const quantities = Array.from(quantityInputs).map(input => input.value);
+        
+        console.log('Sending budget data:', {
+            title: document.getElementById('budgetTitle').value,
+            customerName: document.getElementById('customerName').value,
+            productIds: productIds,
+            quantities: quantities
+        });
+        
+        fetch('{% url "create_budget_from_cart" %}', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => {
+            console.log('Response status:', response.status);
+            return response.json();
+        })
+        .then(data => {
+            console.log('Server response:', data);
+            if (data.success) {
+                alert('Presupuesto creado y enviado a su correo exitosamente.');
+                localStorage.removeItem('carrito');
+                
+                if (typeof mostrarCarrito === 'function') {
+                    mostrarCarrito();
+                }
+                document.getElementById('modalCrearPresupuesto').classList.remove('mostrar');
+                updateBudgetButtonVisibility();
+            } else {
+                alert('Error al crear el presupuesto: ' + data.error);
+                updateBudgetButtonVisibility();
+            }
+        })
+        .catch(error => {
+            console.error('Fetch error:', error);
+            alert('Ocurrió un error al enviar el presupuesto. Detalles: ' + error.message);
+            updateBudgetButtonVisibility();
+        });
+    });
+    
+    document.addEventListener('DOMContentLoaded', function() {
+        updateBudgetButtonVisibility();
+        
+        document.querySelectorAll('.cerrar-modal').forEach(button => {
+            button.addEventListener('click', function() {
+                document.querySelectorAll('.modal').forEach(modal => {
+                    modal.classList.remove('mostrar');
+                });
+            });
+        });
+        
+        document.querySelectorAll('.modal').forEach(modal => {
+            modal.addEventListener('click', function(e) {
+                if (e.target === this) {
+                    document.querySelectorAll('.modal').forEach(m => {
+                        m.classList.remove('mostrar');
+                    });
+                }
+            });
+        });
+    });
+</script>
+{% endblock %}

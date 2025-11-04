@@ -17,7 +17,7 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path, include
 from core.views import home
-from productos.views import lista_productos
+from productos.views import lista_productos, create_budget_from_cart
 from django.conf import settings
 from django.conf.urls.static import static 
 
@@ -26,6 +26,8 @@ urlpatterns = [
     path("accounts/", include("allauth.urls")),
     path("", home, name="home"),
     path('tienda/', lista_productos, name = 'tienda'),
+    path('budget/create-from-cart/', create_budget_from_cart, name='create_budget_from_cart'),
+    path('', include('core.urls')),
 ]
 
 if settings.DEBUG:

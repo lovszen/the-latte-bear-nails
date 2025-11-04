@@ -1,0 +1,172 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="tienda-container">
+    <main>
+        <div class="tienda-header">
+            <h1 class="tienda-titulo">Editar Presupuesto</h1>
+        </div>
+
+        <form method="post">
+            {% csrf_token %}
+            <div class="mb-3">
+                <label for="title" class="form-label">Título del Presupuesto</label>
+                <input type="text" class="form-control" id="title" name="title" value="{{ budget.title }}" required>
+            </div>
+            
+            <div class="mb-3">
+                <label for="customer_name" class="form-label">Nombre del Cliente</label>
+                <input type="text" class="form-control" id="customer_name" name="customer_name" value="{{ budget.customer_name }}" required>
+            </div>
+            
+            <div class="mb-3">
+                <label for="customer_email" class="form-label">Email del Cliente</label>
+                <input type="email" class="form-control" id="customer_email" name="customer_email" value="{{ budget.customer_email }}" required>
+            </div>
+            
+            <h4 class="mt-4">Productos</h4>
+            <div id="products-container">
+                {% for product in products %}
+                <div class="producto-card">
+                    <div class="producto-imagen-container">
+                        {% if product.imagen %}
+                        <img src="{{ product.imagen.url }}" class="producto-imagen" alt="{{ product.nombre }}">
+                        {% else %}
+                        <div class="producto-imagen-placeholder">
+                            Sin Imagen
+                        </div>
+                        {% endif %}
+                    </div>
+                    <div class="producto-info">
+                        <h3 class="producto-nombre">{{ product.nombre }}</h3>
+                        <div class="producto-precios">
+                            <span class="precio-final">${{ product.precio }}</span>
+                        </div>
+                        <div class="input-group">
+                            <span>Cantidad:</span>
+                            <input type="number" min="1" name="quantities" value="1" class="form-control mx-2" style="width: 80px;">
+                            <button type="button" class="btn btn-outline-primary add-to-budget" 
+                                    data-product-id="{{ product.id }}" 
+                                    data-product-name="{{ product.nombre }}"
+                                    data-product-price="{{ product.precio }}">
+                                Añadir
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            
+            <h4 class="mt-4">Presupuesto Actual</h4>
+            <div id="budget-items">
+                <p class="text-muted">Cargando productos existentes...</p>
+            </div>
+            
+            <div id="hidden-fields-container"></div>
+            
+            <button type="submit" class="btn btn-success mt-3">Actualizar Presupuesto</button>
+            <a href="{% url 'view_budget' budget.id %}" class="btn btn-secondary mt-3">Cancelar</a>
+        </form>
+    </main>
+</div>
+
+<script>
+    const existingItems = [
+        {% for item in budget.items.all %}
+        {
+            id: "{{ item.product.id }}",
+            name: "{{ item.product.nombre }}",
+            price: parseFloat("{{ item.price }}"),
+            quantity: {{ item.quantity }}
+        },
+        {% endfor %}
+    ];
+    
+    let selectedItems = [...existingItems];
+    
+    function updateBudgetDisplay() {
+        const container = document.getElementById('budget-items');
+        if (selectedItems.length === 0) {
+            container.innerHTML = '<p class="text-muted">Añade productos para comenzar...</p>';
+            document.getElementById('hidden-fields-container').innerHTML = '';
+            return;
+        }
+        
+        let html = '<ul class="list-group">';
+        let total = 0;
+        
+        selectedItems.forEach(item => {
+            const subtotal = item.price * item.quantity;
+            total += subtotal;
+            
+            html += `<li class="list-group-item d-flex justify-content-between align-items-center">
+                        <div>
+                            <strong>${item.name}</strong><br>
+                            <small class="text-muted">$${item.price.toFixed(2)} x ${item.quantity}</small>
+                        </div>
+                        <div class="text-end">
+                            <strong>$${subtotal.toFixed(2)}</strong><br>
+                            <button type="button" class="btn btn-sm btn-danger remove-item" data-product-id="${item.id}">Eliminar</button>
+                        </div>
+                     </li>`;
+        });
+        
+        html += `<li class="list-group-item d-flex justify-content-between">
+                    <strong>Total</strong>
+                    <strong>$${total.toFixed(2)}</strong>
+                 </li>`;
+        
+        container.innerHTML = html;
+        
+        let hiddenFieldsHtml = '';
+        selectedItems.forEach(item => {
+            hiddenFieldsHtml += `<input type="hidden" name="product_ids" value="${item.id}">`;
+            hiddenFieldsHtml += `<input type="hidden" name="quantities" value="${item.quantity}">`;
+        });
+        document.getElementById('hidden-fields-container').innerHTML = hiddenFieldsHtml;
+        
+        document.querySelectorAll('.remove-item').forEach(button => {
+            button.addEventListener('click', function() {
+                const productId = this.getAttribute('data-product-id');
+                selectedItems = selectedItems.filter(item => item.id !== productId);
+                updateBudgetDisplay();
+            });
+        });
+    }
+    
+    function attachAddToBudgetListeners() {
+        document.querySelectorAll('.add-to-budget').forEach(button => {
+            if (!button.dataset.listenerAttached) {
+                button.addEventListener('click', function() {
+                    const productId = this.getAttribute('data-product-id');
+                    const productName = this.getAttribute('data-product-name');
+                    const productPrice = parseFloat(this.getAttribute('data-product-price'));
+                    const quantityInput = this.previousElementSibling.querySelector('input');
+                    const quantity = parseInt(quantityInput.value) || 1;
+                    
+                    const existingItemIndex = selectedItems.findIndex(item => item.id === productId);
+                    if (existingItemIndex !== -1) {
+                        selectedItems[existingItemIndex].quantity += quantity;
+                    } else {
+                        selectedItems.push({
+                            id: productId,
+                            name: productName,
+                            price: productPrice,
+                            quantity: quantity
+                        });
+                    }
+                    
+                    quantityInput.value = 1;
+                    updateBudgetDisplay();
+                });
+                button.dataset.listenerAttached = 'true';
+            }
+        });
+    }
+    
+    document.addEventListener('DOMContentLoaded', function() {
+        updateBudgetDisplay();
+        attachAddToBudgetListeners();
+    });
+</script>
+{% endblock %}

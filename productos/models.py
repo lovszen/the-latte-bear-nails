@@ -36,7 +36,7 @@ class Producto(models.Model):
     ]
 
     nombre = models.CharField(max_length = 40)
-    precio = models.TextField()
+    precio = models.DecimalField(max_digits=10, decimal_places=2)
     imagen = models.ImageField(upload_to = 'productos/')
     forma = models.CharField(max_length=20, choices=forma_choices, default='almendra')
     tamaño = models.CharField(max_length=10, choices=tamaño_choices, default='s')

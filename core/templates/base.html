@@ -23,14 +23,34 @@
     >
 
     <div class="login-icons position-absolute top-0 end-0 p-3">
-      <a href="{% url 'account_login' %}" class="d-block text-decoration-none">
-        <i class="bi bi-person-circle"></i> Iniciar sesión
-      </a>
-      <a href="{% url 'account_signup' %}" class="d-block text-decoration-none mt-1">
-        <i class="bi bi-person-plus-fill"></i> Registrarse
-      </a>
+      {% if user.is_authenticated %}
+        <div class="logged-in-user">
+          <span class="text-muted small">Hola,</span><br>
+          <strong>{{ user.username }}</strong><br>
+          <a href="{% url 'account_logout' %}" class="btn btn-sm btn-outline-secondary mt-1">Cerrar sesión</a>
+        </div>
+      {% else %}
+        <a href="{% url 'account_login' %}" class="d-block text-decoration-none">
+          <i class="bi bi-person-circle"></i> Iniciar sesión
+        </a>
+        <a href="{% url 'account_signup' %}" class="d-block text-decoration-none mt-1">
+          <i class="bi bi-person-plus-fill"></i> Registrarse
+        </a>
+      {% endif %}
     </div>
   </header>
+
+  {% if user.is_authenticated %}
+  <nav class="navbar navbar-expand-lg navbar-light bg-light">
+    <div class="container">
+      <div class="navbar-nav">
+        <a class="nav-link" href="{% url 'home' %}">Inicio</a>
+        <a class="nav-link" href="{% url 'tienda' %}">Tienda</a>
+        <a class="nav-link" href="{% url 'budgets_list' %}">Mis Presupuestos</a>
+      </div>
+    </div>
+  </nav>
+  {% endif %}
 
   {% block content %}{% endblock %}
 

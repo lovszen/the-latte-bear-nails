@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="tienda-container">
+    <main>
+        <div class="tienda-header">
+            <h1 class="tienda-titulo">Eliminar Presupuesto</h1>
+        </div>
+        
+        <div class="producto-card">
+            <div class="producto-info">
+                <h3 class="producto-nombre">¿Estás seguro de que deseas eliminar este presupuesto?</h3>
+                <p><strong>Título:</strong> {{ budget.title }}</p>
+                <p><strong>Cliente:</strong> {{ budget.customer_name }}</p>
+                <p><strong>Email:</strong> {{ budget.customer_email }}</p>
+                <p><strong>Total:</strong> ${{ budget.total_amount }}</p>
+                
+                <form method="post" class="mt-3">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger">Sí, eliminar</button>
+                    <a href="{% url 'view_budget' budget.id %}" class="btn btn-secondary">Cancelar</a>
+                </form>
+            </div>
+        </div>
+    </main>
+</div>
+{% endblock %}

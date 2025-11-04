@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="tienda-container">
+    <main>
+        <div class="tienda-header">
+            <h1 class="tienda-titulo">{{ budget.title }}</h1>
+        </div>
+        
+        <div class="d-flex flex-column flex-md-row">
+            <div class="flex-grow-1 me-md-4">
+                <div class="mb-3">
+                    <strong>Cliente:</strong> {{ budget.customer_name }}<br>
+                    <strong>Email:</strong> {{ budget.customer_email }}<br>
+                    <strong>Fecha:</strong> {{ budget.created_at|date:"d/m/Y H:i" }}
+                </div>
+                
+                <h4>Detalle del Presupuesto</h4>
+                <div class="productos-grid">
+                    {% for item in budget.items.all %}
+                    <div class="producto-card">
+                        <div class="producto-info">
+                            <h3 class="producto-nombre">{{ item.product.nombre }}</h3>
+                            <div class="producto-precios">
+                                <div>Precio Unitario: ${{ item.price }}</div>
+                                <div>Cantidad: {{ item.quantity }}</div>
+                                <div>Subtotal: ${{ item.subtotal }}</div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                
+                <div class="producto-card mt-3">
+                    <div class="producto-info">
+                        <h3 class="producto-nombre"><strong>Total: ${{ budget.total_amount }}</strong></h3>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="budget-actions mt-4 mt-md-0">
+                <h4>Acciones</h4>
+                <div class="d-grid gap-2">
+                    <a href="{% url 'download_budget' budget.id %}" class="btn btn-primary">Descargar PDF</a>
+                    <button id="send-budget-btn" class="btn btn-success" data-budget-id="{{ budget.id }}">Enviar por Email</button>
+                    <a href="{% url 'edit_budget' budget.id %}" class="btn btn-warning">Editar Presupuesto</a>
+                    <a href="{% url 'delete_budget' budget.id %}" class="btn btn-danger">Eliminar Presupuesto</a>
+                    <a href="{% url 'budgets_list' %}" class="btn btn-secondary">Volver a presupuestos</a>
+                </div>
+                
+                <div id="message" class="mt-3" style="display: none;"></div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<script>
+    document.getElementById('send-budget-btn').addEventListener('click', function() {
+        const budgetId = this.getAttribute('data-budget-id');
+        
+        fetch('{% url "generate_budget" %}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            },
+            body: 'budget_id=' + budgetId
+        })
+        .then(response => response.json())
+        .then(data => {
+            const messageDiv = document.getElementById('message');
+            if (data.message) {
+                messageDiv.innerHTML = '<div class="alert alert-success">' + data.message + '</div>';
+                messageDiv.style.display = 'block';
+            } else if (data.error) {
+                messageDiv.innerHTML = '<div class="alert alert-danger">Error: ' + data.error + '</div>';
+                messageDiv.style.display = 'block';
+            }
+        })
+        .catch(error => {
+            const messageDiv = document.getElementById('message');
+            messageDiv.innerHTML = '<div class="alert alert-danger">Error de conexión: ' + error + '</div>';
+            messageDiv.style.display = 'block';
+        });
+    });
+</script>
+{% endblock %}
