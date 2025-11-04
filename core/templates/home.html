@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% load socialaccount %}
+{% load static %}
+
+
+{% block title %}Inicio · The Latte Bear Nails{% endblock %}
+
+{% block content %}
+  <div class = "oso-container position-relative">
+    <img 
+      src = "{% static 'images/interfaz principal.png' %}"
+      alt = "Imagen de bienvenida"
+      class = "img-fluid w-100"
+      >
+
+      <a 
+        href = "{% url 'lista_productos' %}"
+        class = "btn btn-lg btn-store position-absolute"    
+      >
+      Tienda
+      </a>
+  </div>
+{% endblock %}

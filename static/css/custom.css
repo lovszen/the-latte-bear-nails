@@ -1,0 +1,77 @@
+.announcement-bar { 
+    background-color: #ffe4f4;
+    color: #522b0b;
+    font-size: 0.85rem;
+    padding: 10px 0;
+    font-family: 'Times New Roman', Times, serif;
+}
+
+.hero-header{
+    position: relative;
+    height: 180px;
+    background-image: url("../images/press\ on.jpg");
+    background-repeat: no-repeat;
+    background-size: cover;
+}
+
+.site-logo {
+    max-width: 300px;
+    width: 80%;
+    height: auto;
+}
+
+.login-icons a{
+    color: #522b0b;
+}
+
+.oso-container {
+    position: relative;
+    margin: 0 auto;
+    padding: 0; 
+    max-width: 100%;
+    min-height: 400px;
+
+}
+
+.oso-container img {
+    width: 110%;
+    height: auto;
+    display: block;
+}
+
+.btn-store {
+    position: absolute;
+    bottom: 8%;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: #ffe4f4;
+    color: #522b0b;
+    border-radius: 25px solid;
+    padding: 8px 25px;
+    font-weight: bold;
+    z-index: 10;
+    font-family: 'Times New Roman', Times, serif;
+}
+
+.main-container {
+    padding-left: 0;
+    padding-right: 0%;
+    max-width: 100%;
+}
+
+.home-page .hero-header {
+    height: 150px;
+}
+
+.home-page .site-logo {
+    max-width: 250px;
+}
+
+.body {
+    overflow-x: hidden;
+}
+
+.main {
+    padding: 0;
+    margin: 0;
+}
