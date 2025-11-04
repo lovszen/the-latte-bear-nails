@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Tienda · The Latte Bear Nails{% endblock %}
+
+{% block content %}
+<div class="tienda-container">
+    <aside class="menu-lateral">
+    </aside>
+
+    <main>
+        <div class="tienda-header">
+            <h1 class="tienda-titulo">Nuestra Tienda</h1>
+            
+            <div class="tienda-iconos">
+                <div class="icono-chat-user" title="Chat con nosotros">
+                    <i class="fas fa-comment-dots"></i>
+                </div>
+                <div class="icono-chat-bot" title="Chat Bot">
+                    <i class="fas fa-robot"></i>
+                </div>
+                
+                <div class="icono-carrito" title="Carrito de compras">
+                    <i class="fas fa-shopping-bag"></i>
+                    <span class="contador-carrito" id="contador-carrito">0</span>
+                </div>
+            </div>
+        </div>
+        
+        {% if productos %}
+        <div class="productos-grid">
+            {% for producto in productos %}
+            <div class="producto-card">
+                {% if producto.imagen %}
+                    <img src="{{ producto.imagen.url }}" class="producto-imagen" alt="{{ producto.nombre }}">
+                {% else %}
+                    <div class="producto-imagen" style="background-color: #f8f9fa; display: flex; align-items: center; justify-content: center; color: #522b0b;">
+                        Sin Imagen
+                    </div>
+                {% endif %}
+
+                <div class="producto-nombre">{{ producto.nombre }}</div>
+                <div class="producto-precio">${{ producto.precio }}</div>
+                
+                <div class="producto-detalles">
+                    <strong>Forma:</strong> {{ producto.forma }}<br>
+                    <strong>Tamaño:</strong> {{ producto.tamaño }}<br>
+                    <strong>Color:</strong> {{ producto.color_principal }}
+                </div>
+
+                <button class="btn-agregar-carrito btn btn-primary w-100" 
+                        style="background-color: #ffe4f4; border-color: #ffe4f4; color: #522b0b;"
+                        data-producto-id="{{ producto.id }}"
+                        data-producto-nombre="{{ producto.nombre }}"
+                        data-producto-precio="{{ producto.precio }}">
+                    Agregar al Carrito
+                </button>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="alert alert-info text-center">
+            <h4>No hay productos disponibles en este momento</h4>
+            <p>Vuelve pronto para ver las novedades.</p>
+        </div>
+        {% endif %}
+    </main>
+</div>
+
+<div id="modalProducto" class="modal">
+    <div class="modal-contenido" style="max-width: 800px;">
+        <button class="cerrar-modal">&times;</button>
+        <div class="producto-detalle" id="contenidoProducto"></div>
+    </div>
+</div>
+
+<div id="modalCarrito" class="modal">
+    <div class="modal-contenido" style="max-width: 700px;">
+        <button class="cerrar-modal">&times;</button>
+        <h2 class="carrito-titulo">Tu Carrito</h2>
+        <div id="contenidoCarrito"></div>
+    </div>
+</div>
+
+<script src="{% static 'js/carrito.js' %}"></script>
+{% endblock %}

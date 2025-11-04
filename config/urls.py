@@ -17,11 +17,16 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path, include
 from core.views import home
-from core import views 
+from productos.views import lista_productos
+from django.conf import settings
+from django.conf.urls.static import static 
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path("accounts/", include("allauth.urls")),
     path("", home, name="home"),
-    path('tienda/', views.lista_productos, name = 'lista_productos'),
+    path('tienda/', lista_productos, name = 'tienda'),
 ]
+
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
