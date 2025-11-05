@@ -139,7 +139,57 @@ def crear_pago_carrito_js(request):
         return JsonResponse({'error': 'El servicio de pago no está configurado.'}, status=500)
         
     try:
-       
+        # Parse the JSON data from the request body
+        json_data = json.loads(request.body)
+        
+        # Extract cart items from the JSON data
+        cart_items = json_data.get('items', [])
+        
+        # Check if there are items to process
+        if not cart_items:
+            return JsonResponse({'error': 'No hay productos para procesar'}, status=400)
+        
+        # Format items for MercadoPago
+        items_para_mp = []
+        for item in cart_items:
+            # Get price - JavaScript sends 'unit_price' from item.precio
+            price_raw = item.get('unit_price', 0)
+            if isinstance(price_raw, (int, float)):
+                unit_price = float(price_raw)
+            else:
+                # Handle string format, potentially in Argentine format
+                price_str = str(price_raw).strip().replace('.', '').replace(',', '.')
+                try:
+                    unit_price = float(price_str)
+                except ValueError:
+                    unit_price = 0.0
+            
+            # Format to 2 decimal places as required by MercadoPago
+            unit_price = round(unit_price, 2)
+            
+            # Ensure unit_price is positive and not zero
+            if unit_price <= 0:
+                print(f"DEBUG: Price was zero or negative ({unit_price}) for item {item.get('title', 'unknown')}, raw price was {item.get('unit_price', 0)}")
+                unit_price = 0.01  # Minimum value to avoid error
+            
+            items_para_mp.append({
+                "title": item.get('title', 'Producto'),
+                "quantity": max(1, int(item.get('quantity', 1))),  # Ensure quantity is at least 1
+                "unit_price": unit_price,
+                "currency_id": "ARS"
+            })
+        
+        # Prepare the preference data
+        preference_data = {
+            "items": items_para_mp,
+            "back_urls": {
+                "success": request.build_absolute_uri('/payment/success/'),
+                "failure": request.build_absolute_uri('/payment/failure/'),
+                "pending": request.build_absolute_uri('/payment/pending/')
+            },
+            "external_reference": f"cart_{request.user.id}_{request.session.session_key if hasattr(request, 'session') and request.session.session_key else 'no_session'}",
+        }
+        
         preference_response = sdk.preference().create(preference_data)
         
 

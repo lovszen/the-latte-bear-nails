@@ -81,8 +81,7 @@
             <button id="btn-proceder-pago" class="btn btn-primary w-100 mb-2" style="background-color: #ffc0cb; border-color: #ffc0cb; color: #522b0b; font-weight: bold; padding: 10px;">
                 <i class="bi bi-credit-card"></i> Proceder al Pago
             </button>
-            
-            <button id="create-budget-btn" class="btn btn-success w-100 mb-2">Crear Presupuesto</button>
+            <button id="create-budget-btn" class="btn w-100 mb-2" style="background-color: #ffe4f4; color: #522b0b; border: 1px solid #ffe4f4;">Crear Presupuesto</button>
 
             <div id="budget-form-target" style="display: none;"></div>
         </div>
@@ -101,6 +100,10 @@
                     <label for="budgetTitle" class="form-label">Título del Presupuesto</label>
                     <input type="text" class="form-control" id="budgetTitle" name="title" required>
                 </div>
+                <div class="mb-3">
+                    <label for="customerName" class="form-label">Nombre del Cliente</label>
+                    <input type="text" class="form-control" id="customerName" name="customer_name" value="{{ user.username }}" required>
+                </div>
             </div>
             
             <div id="cart-items-container"></div>
@@ -115,16 +118,16 @@
     function updateBudgetButtonVisibility() {
         const cartItems = JSON.parse(localStorage.getItem('carrito') || '[]');
         const createBudgetBtn = document.getElementById('create-budget-btn');
-        const sendEmailBtn = document.getElementById('send-budget-email-btn');
         
         if (cartItems.length > 0) {
             createBudgetBtn.style.display = 'block';
-            sendEmailBtn.style.display = 'block';
         } else {
             createBudgetBtn.style.display = 'none';
-            sendEmailBtn.style.display = 'none';
         }
     }
+    
+    // Make this function globally available so carrito.js can call it
+    window.updateBudgetButtonVisibility = updateBudgetButtonVisibility;
     
     function actualizarCarritoDisplay() {
         if (typeof mostrarCarrito === 'function') {
@@ -139,39 +142,6 @@
         });
         
         document.getElementById('modalCrearPresupuesto').classList.add('mostrar');
-        
-        const cartItems = JSON.parse(localStorage.getItem('carrito') || '[]');
-        if (cartItems.length > 0) {
-            document.getElementById('cart-items-container').innerHTML = '';
-            
-            document.getElementById('budgetTitle').value = '';
-            document.getElementById('customerName').value = '';
-            
-            cartItems.forEach(item => {
-                const productInput = document.createElement('input');
-                productInput.type = 'hidden';
-                productInput.name = 'product_ids';
-                productInput.value = item.id;
-                
-                const quantityInput = document.createElement('input');
-                quantityInput.type = 'hidden';
-                quantityInput.name = 'quantities';
-                quantityInput.value = item.cantidad;
-                
-                document.getElementById('cart-items-container').appendChild(productInput);
-                document.getElementById('cart-items-container').appendChild(quantityInput);
-            });
-        }
-    });
-    
-    document.getElementById('send-budget-email-btn').addEventListener('click', function() {
-        document.querySelectorAll('.modal').forEach(modal => {
-            modal.classList.remove('mostrar');
-        });
-        
-        document.getElementById('modalCrearPresupuesto').classList.add('mostrar');
-        
-        document.querySelector('.carrito-titulo').textContent = 'Enviar Presupuesto por Email';
         
         const cartItems = JSON.parse(localStorage.getItem('carrito') || '[]');
         if (cartItems.length > 0) {
@@ -230,8 +200,9 @@
             console.log('Server response:', data);
             if (data.success) {
                 alert('Presupuesto creado y enviado a su correo exitosamente.');
-                localStorage.removeItem('carrito');
                 
+                // Keep the cart with products after sending budget
+                // Only close the budget modal and update UI
                 if (typeof mostrarCarrito === 'function') {
                     mostrarCarrito();
                 }

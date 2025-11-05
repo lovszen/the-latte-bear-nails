@@ -1,0 +1,17 @@
+Presupuesto - {{ budget.title }}
+
+Información del Cliente:
+Cliente: {{ budget.customer_name }}
+Email: {{ budget.customer_email }}
+Fecha: {{ budget.created_at|date:"d/m/Y" }}
+
+Detalle del Presupuesto:
+{% for item in budget.items.all %}{{ item.product.nombre }} - Cantidad: {{ item.quantity }} - Precio Unit.: $ {{ item.price|floatformat:2 }} - Subtotal: $ {{ item.subtotal|floatformat:2 }}
+
+{% endfor %}
+TOTAL: $ {{ budget.total_amount|floatformat:2 }}
+
+¡Gracias por confiar en The Latte Bear Nails!
+
+Para cualquier consulta, no dude en contactarnos.
+The Latte Bear Nails - Presupuesto generado automáticamente

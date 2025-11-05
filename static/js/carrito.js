@@ -5,6 +5,22 @@ function actualizarCarrito() {
     const totalItems = carrito.reduce((sum, item) => sum + item.cantidad, 0);
     contadorCarrito.textContent = totalItems;
     localStorage.setItem('carrito', JSON.stringify(carrito));
+    
+    // Update budget button visibility if the function is available
+    if (typeof window.updateBudgetButtonVisibility === 'function') {
+        window.updateBudgetButtonVisibility();
+    }
+}
+
+// Function to sync in-memory cart with localStorage
+function sincronizarCarrito() {
+    const carritoGuardado = localStorage.getItem('carrito');
+    if (carritoGuardado) {
+        carrito = JSON.parse(carritoGuardado);
+    } else {
+        carrito = [];  // Initialize as empty if not in storage
+    }
+    actualizarCarrito();
 }
 
 function mostrarModal(modalId) {
@@ -28,7 +44,6 @@ function mostrarCarrito() {
                 <p>Tu carrito está vacío</p>
             </div>
         `;
-        botonesDiv.style.display = 'none';
     } else {
         
         let total = 0;
@@ -59,9 +74,21 @@ function mostrarCarrito() {
             </div>
         `;
         
-        botonesDiv.style.display = 'block';
-        
         agregarListenersBotonesCarrito();
+    }
+    
+    // Always show the button container and let individual button visibility be handled by updateBudgetButtonVisibility
+    botonesDiv.style.display = 'block';
+    
+    // Update budget button visibility based on cart content
+    if (typeof window.updateBudgetButtonVisibility === 'function') {
+        window.updateBudgetButtonVisibility();
+    }
+    
+    // If cart is empty, disable the MercadoPago button by checking cart state in the button's functionality
+    const mercadoPagoBtn = document.getElementById('btn-proceder-pago');
+    if (mercadoPagoBtn && carrito.length === 0) {
+        // Button remains visible but will show empty cart message when clicked
     }
     
     mostrarModal('modalCarrito');
@@ -91,7 +118,9 @@ function agregarListenersBotonesCarrito() {
 }
 
 function procederAlPagoDirecto() {
-    let carrito = JSON.parse(localStorage.getItem('carrito')) || [];
+    // Sync with localStorage to ensure we have the latest cart state
+    sincronizarCarrito();
+    
     if (carrito.length === 0) {
         alert("Tu carrito está vacío.");
         return;
@@ -164,11 +193,8 @@ function cambiarCantidad(productoId, cambio) {
 
 document.addEventListener('DOMContentLoaded', function() {
     
-    const carritoGuardado = localStorage.getItem('carrito');
-    if (carritoGuardado) {
-        carrito = JSON.parse(carritoGuardado);
-        actualizarCarrito();
-    }
+    // Initialize cart from localStorage
+    sincronizarCarrito();
 
     document.querySelectorAll('.btn-agregar-carrito').forEach(button => {
         button.addEventListener('click', function() {
@@ -221,8 +247,5 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     
     
-    document.getElementById('budgetForm').addEventListener('submit', function(e) {
-        e.preventDefault();
-        alert("La lógica de crear presupuesto está desactivada para la prueba.");
-    });
+
 });

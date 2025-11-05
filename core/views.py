@@ -227,12 +227,22 @@ def crear_pago_presupuesto(request, budget_id):
         return redirect('budgets_list') 
 
     
+    # Check if the budget has items
+    if not budget.items.exists():
+        messages.error(request, "El presupuesto no tiene productos.")
+        return redirect('view_budget', budget_id=budget.id)
+    
     items_para_mp = []
     for item in budget.items.all(): 
+        unit_price = round(float(item.price), 2)
+        # Ensure unit_price is positive and not zero
+        if unit_price <= 0:
+            unit_price = 0.01  # Minimum value to avoid error
+        
         items_para_mp.append({
             "title": item.product.nombre,
-            "quantity": item.quantity,
-            "unit_price": float(item.price), 
+            "quantity": max(1, int(item.quantity)),  # Ensure quantity is at least 1
+            "unit_price": unit_price, 
             "currency_id": "ARS" 
         })
 
@@ -246,7 +256,6 @@ def crear_pago_presupuesto(request, budget_id):
             "failure": request.build_absolute_uri('/payment/failure/'),
             "pending": request.build_absolute_uri('/payment/pending/')
         },
-        "auto_return": "approved",
         
         
         "external_reference": budget.id, 

@@ -1,11 +1,14 @@
 from reportlab.lib.pagesizes import letter
-from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, Image
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.units import inch
 from reportlab.lib import colors
 from io import BytesIO
 from django.core.mail import EmailMessage
 from .models import Budget
+import requests
+from PIL import Image as PILImage
+from io import BytesIO as IO
 
 def generate_budget_pdf(budget):
     """
@@ -24,6 +27,36 @@ def generate_budget_pdf(budget):
         spaceAfter=30,
         alignment=1  # Center alignment
     )
+    
+    # Add logo to the PDF - try to fetch from CDN
+    try:
+        # Fetch the logo from CDN
+        logo_url = "https://cdn.imgchest.com/files/05065870b1ff.png"
+        response = requests.get(logo_url)
+        if response.status_code == 200:
+            # Create image from bytes
+            image_stream = IO(response.content)
+            img = PILImage.open(image_stream)
+            
+            # Resize the image if needed
+            img_width, img_height = img.size
+            aspect_ratio = img_height / float(img_width)
+            
+            # Set max width and calculate height to maintain aspect ratio
+            max_width = 2 * inch
+            calculated_height = max_width * aspect_ratio
+            
+            # Create a reportlab image object
+            logo_img = Image(image_stream, width=max_width, height=calculated_height)
+            logo_img.hAlign = 'CENTER'  # Center the image
+            elements.append(logo_img)
+            elements.append(Spacer(0.2 * inch, 0.2 * inch))
+        else:
+            # If there's an issue with the logo, still proceed with the PDF
+            pass
+    except Exception:
+        # If there's any issue with the logo (no internet, invalid image, etc.), proceed without it
+        pass
     
     # Title
     title = Paragraph(f"Presupuesto - {budget.title}", title_style)
@@ -86,23 +119,32 @@ def generate_budget_pdf(budget):
 
 def send_budget_email(budget, pdf_buffer):
     """
-    Send the budget PDF via email
+    Send the budget PDF via email with custom HTML template
     """
     from django.conf import settings
+    from django.template.loader import render_to_string
     import logging
 
     logger = logging.getLogger(__name__)
     
-    subject = f"Presupuesto - {budget.title}"
-    message = f"Estimado {budget.customer_name},\n\nAdjunto encontrará el presupuesto solicitado.\n\nSaludos,\nEquipo de The Latte Bear Nails"
-    
     try:
-        email = EmailMessage(
-            subject,
-            message,
-            getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@thelattebear.com'),  # From email from settings
-            [budget.customer_email],  # To email
+        # Render HTML email template
+        html_content = render_to_string('emails/budget_email.html', {'budget': budget})
+        text_content = render_to_string('emails/budget_email.txt', {'budget': budget})
+        
+        subject = f"Presupuesto - {budget.title}"
+        
+        # Create email with both text and HTML content
+        from django.core.mail import EmailMultiAlternatives
+        email = EmailMultiAlternatives(
+            subject=subject,
+            body=text_content,  # Plain text version
+            from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@thelattebear.com'),
+            to=[budget.customer_email],
         )
+        
+        # Attach HTML version
+        email.attach_alternative(html_content, "text/html")
         
         # Attach the PDF
         email.attach('presupuesto.pdf', pdf_buffer.getvalue(), 'application/pdf')
@@ -114,5 +156,4 @@ def send_budget_email(budget, pdf_buffer):
         # Log the error
         logger.error(f"Error sending budget email: {e}")
         print(f"Error sending email: {e}")  # For development
-        # In development, we can write the email to console/file instead
         return False
