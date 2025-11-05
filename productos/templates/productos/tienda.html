@@ -34,28 +34,13 @@
                     {% if producto.imagen %}
                         <img src="{{ producto.imagen.url }}" class="producto-imagen" alt="{{ producto.nombre }}">
                     {% else %}
-                        <div class="producto-imagen-placeholder">
-                            Sin Imagen
-                        </div>
+                        <div class="producto-imagen-placeholder">Sin Imagen</div>
                     {% endif %}
-
-                    <!-- Etiqueta de descuento (opcional - descomenta cuando lo tengas) -->
-                    <!--
-                    {% if producto.descuento and producto.descuento > 0 %}
-                        <span class="etiqueta-descuento">-{{ producto.descuento }}%</span>
-                    {% endif %}
-                    -->
                 </div>
 
                 <div class="producto-info">
                     <h3 class="producto-nombre">{{ producto.nombre }}</h3>
-
                     <div class="producto-precios">
-                        <!-- Precio original (opcional)
-                        {% if producto.precio_original and producto.precio_original != producto.precio %}
-                            <span class="precio-original">${{ producto.precio_original }}</span>
-                        {% endif %}
-                        -->
                         <span class="precio-final">${{ producto.precio }}</span>
                     </div>
 
@@ -78,7 +63,6 @@
     </main>
 </div>
 
-<!-- Modales (sin cambios) -->
 <div id="modalProducto" class="modal">
     <div class="modal-contenido" style="max-width: 800px;">
         <button class="cerrar-modal">&times;</button>
@@ -90,34 +74,33 @@
     <div class="modal-contenido" style="max-width: 700px;">
         <button class="cerrar-modal">&times;</button>
         <h2 class="carrito-titulo">Tu Carrito</h2>
+        
         <div id="contenidoCarrito"></div>
+        
         <div class="budget-actions mt-3">
-            <button id="create-budget-btn" class="btn btn-success" style="display: none;">Crear Presupuesto</button>
-            <button id="send-budget-email-btn" class="btn btn-primary" style="display: none;">Enviar Presupuesto por Email</button>
+            <button id="btn-proceder-pago" class="btn btn-primary w-100 mb-2" style="background-color: #ffc0cb; border-color: #ffc0cb; color: #522b0b; font-weight: bold; padding: 10px;">
+                <i class="bi bi-credit-card"></i> Proceder al Pago
+            </button>
+            
+            <button id="create-budget-btn" class="btn btn-success w-100 mb-2">Crear Presupuesto</button>
+
+            <div id="budget-form-target" style="display: none;"></div>
         </div>
     </div>
 </div>
 
-<!-- Budget Creation Modal -->
 <div id="modalCrearPresupuesto" class="modal">
     <div class="modal-contenido" style="max-width: 600px;">
         <button class="cerrar-modal">&times;</button>
         <h2 class="carrito-titulo">Crear Presupuesto</h2>
+        
         <form id="budgetForm">
-            {% csrf_token %}
-            <div class="mb-3">
-                <label for="budgetTitle" class="form-label">Título del Presupuesto</label>
-                <input type="text" class="form-control" id="budgetTitle" name="title" required>
-            </div>
-            
-            <div class="mb-3">
-                <label for="customerName" class="form-label">Nombre del Cliente</label>
-                <input type="text" class="form-control" id="customerName" name="customer_name" required>
-            </div>
-            
-            <div class="mb-3">
-                <label>El presupuesto se enviará a:</label>
-                <p class="form-control-plaintext">{{ user.email|default:"No registrado" }}</p>
+            {% csrf_token %} 
+            <div id="budget-fields">
+                <div class="mb-3">
+                    <label for="budgetTitle" class="form-label">Título del Presupuesto</label>
+                    <input type="text" class="form-control" id="budgetTitle" name="title" required>
+                </div>
             </div>
             
             <div id="cart-items-container"></div>

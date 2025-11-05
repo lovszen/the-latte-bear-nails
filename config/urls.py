@@ -28,6 +28,7 @@ urlpatterns = [
     path('tienda/', lista_productos, name = 'tienda'),
     path('budget/create-from-cart/', create_budget_from_cart, name='create_budget_from_cart'),
     path('', include('core.urls')),
+    path('', include('productos.urls')),
 ]
 
 if settings.DEBUG:

@@ -44,7 +44,8 @@ INSTALLED_APPS = [
     'allauth.account',
     'allauth.socialaccount',
     'django_bootstrap5',
-    #"allauth.socialaccount.providers.google",
+    
+    "allauth.socialaccount.providers.google",
     #"allauth.socialaccount.providers.github",  
     
     'core',
@@ -62,7 +63,7 @@ LOGIN_REDIRECT_URL = "home"
 LOGOUT_REDIRECT_URL = "home"
 ACCOUNT_LOGIN_METHODS = {"email", "username"}
 ACCOUNT_SIGNUP_FIELDS = ["email*", "username*", "password1*", "password2*"]
-
+MERCADOPAGO_ACCESS_TOKEN = config('APP_USR-7817171409735399-110418-5d089910efe222b19646dcaf871cfaab-2967305738', default='')
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',

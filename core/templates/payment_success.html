@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+<div class="container text-center mt-5 mb-5">
+    <div style="background-color: #fff; padding: 40px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
+        
+        <i class="bi bi-check-circle-fill" style="font-size: 4rem; color: #198754;"></i>
+        
+        <h1 class="mt-3" style="color: #198754;">¡Gracias por tu compra!</h1>
+        <p class="lead">Tu pago fue aprobado y ya lo estamos procesando.</p>
+        <p>En breve te contactaremos para confirmar los detalles del envío.</p>
+        <hr class="my-4">
+        
+        <a href="{% url 'home' %}" class="btn btn-primary" style="background-color: #FFC0CB; border-color: #FFC0CB; color: #522b0b;">
+            Volver al inicio
+        </a>
+        <a href="{% url 'budgets_list' %}" class="btn btn-outline-secondary">
+            Ver mis presupuestos
+        </a>
+    </div>
+</div>
+{% endblock %}

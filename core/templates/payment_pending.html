@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+<div class="container text-center mt-5 mb-5">
+    <div style="background-color: #fff; padding: 40px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
+        
+        <i class="bi bi-clock-history" style="font-size: 4rem; color: #ffc107;"></i>
+        
+        <h1 class="mt-3" style="color: #ffc107;">¡Falta un pasito más!</h1>
+        <p class="lead">Tu pago está pendiente.</p>
+        <p>
+            Si elegiste un medio en efectivo (como RapiPago o PagoFácil), no te olvides de ir a pagarlo
+            con el cupón que te generó MercadoPago. La orden se completará cuando se acredite.
+        </p>
+        <hr class="my-4">
+        
+        <a href="{% url 'home' %}" class="btn btn-primary" style="background-color: #FFC0CB; border-color: #FFC0CB; color: #522b0b;">
+            Entendido, volver al inicio
+        </a>
+    </div>
+</div>
+{% endblock %}

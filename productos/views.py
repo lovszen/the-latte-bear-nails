@@ -1,11 +1,20 @@
 from django.shortcuts import render, redirect
 from django.http import JsonResponse
 from django.contrib.auth.decorators import login_required
-from django.views.decorators.http import require_http_methods
+from django.views.decorators.http import require_http_methods, require_POST
 from django.contrib import messages
 from core.models import Budget, BudgetItem
 from core.utils import generate_budget_pdf, send_budget_email
 from .models import Producto
+import mercadopago
+from django.conf import settings
+import json
+
+try:
+    sdk = mercadopago.SDK(settings.MERCADOPAGO_ACCESS_TOKEN)
+except Exception as e:
+    print(f"Error al inicializar el SDK de MercadoPago: {e}")
+    sdk = None
 
 # Create your views here.
 
@@ -117,3 +126,45 @@ def create_budget_from_cart(request):
             return JsonResponse({'success': False, 'error': f'Error de formato en datos: {str(e)}'})
         except Exception as e:
             return JsonResponse({'success': False, 'error': str(e)})
+
+@login_required
+@require_POST
+def crear_pago_carrito_js(request):
+    """
+    Toma los datos del carrito (enviados por JS como JSON)
+    y crea la preferencia de pago en MercadoPago.
+    """
+    if not sdk:
+        print("!!!!!!!! ERROR GRAVE: SDK de MercadoPago no inicializado !!!!!")
+        return JsonResponse({'error': 'El servicio de pago no está configurado.'}, status=500)
+        
+    try:
+       
+        preference_response = sdk.preference().create(preference_data)
+        
+
+        print("====================================")
+        print("===== RESPUESTA DE MERCADOPAGO =====")
+        print(preference_response)
+        print("====================================")
+       
+
+        if preference_response["status"] == 201:
+            
+            preference = preference_response["response"]
+            return JsonResponse({'init_point': preference['init_point']})
+        else:
+            
+            error_msg = preference_response["response"].get("message", "Error desconocido de MercadoPago")
+            print(f"MercadoPago devolvió un error: {error_msg}")
+            return JsonResponse({'error': error_msg}, status=400)
+
+    except Exception as e:
+       
+        print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+        print(f"¡EL SERVIDOR CRASHEÓ! El error es: {e}")
+        if 'preference_response' in locals():
+            print("LA RESPUESTA (CON ERROR) FUE:")
+            print(preference_response)
+        print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+        return JsonResponse({'error': str(e)}, status=500)

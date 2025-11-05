@@ -16,11 +16,13 @@
   </div>
 
   <header class="hero-header d-flex justify-content-center align-items-center">
-    <img
-      src="{% static 'images/logo press on.png' %}"
-      alt="The Latte Nails Logo"
-      class="img-fluid site-logo"
-    >
+        <a href="{% url 'home' %}" style="border: none; text-decoration: none;">
+      <img
+        src="{% static 'images/logo press on.png' %}"
+        alt="The Latte Nails Logo"
+        class="img-fluid site-logo"
+      >
+    </a>
 
     <div class="login-icons position-absolute top-0 end-0 p-3">
       {% if user.is_authenticated %}

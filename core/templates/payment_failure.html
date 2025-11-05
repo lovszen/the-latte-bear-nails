@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+<div class="container text-center mt-5 mb-5">
+    <div style="background-color: #fff; padding: 40px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
+        
+        <i class="bi bi-x-circle-fill" style="font-size: 4rem; color: #dc3545;"></i>
+        
+        <h1 class="mt-3" style="color: #dc3545;">¡Uy! Hubo un problema</h1>
+        <p class="lead">Tu pago fue rechazado o cancelado.</p>
+        <p>No te preocupes, no se te cobró nada. Podés revisar los datos de tu tarjeta o intentar con otro medio de pago.</p>
+        <hr class="my-4">
+        
+        <a href="{% url 'budgets_list' %}" class="btn btn-primary" style="background-color: #FFC0CB; border-color: #FFC0CB; color: #522b0b;">
+            Volver a mis presupuestos
+        </a>
+        <a href="{% url 'home' %}" class="btn btn-outline-secondary">
+            Ir al inicio
+        </a>
+    </div>
+</div>
+{% endblock %}

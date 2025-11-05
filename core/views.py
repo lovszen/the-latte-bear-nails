@@ -3,9 +3,13 @@ from django.http import HttpResponse, JsonResponse
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_http_methods
 from django.contrib import messages
+import mercadopago
+from django.conf import settings
 from .models import Budget, BudgetItem
 from .utils import generate_budget_pdf, send_budget_email
 from productos.models import Producto
+
+sdk = mercadopago.SDK(settings.MERCADOPAGO_ACCESS_TOKEN)
 
 def home(request):
     return render(request, 'home.html')
@@ -209,3 +213,73 @@ def budgets_list(request):
     """
     budgets = Budget.objects.filter(user=request.user).order_by('-created_at')
     return render(request, 'budgets/budgets_list.html', {'budgets': budgets})
+
+@login_required
+def crear_pago_presupuesto(request, budget_id):
+    """
+   
+    """
+    try:
+        
+        budget = Budget.objects.get(id=budget_id, user=request.user)
+    except Budget.DoesNotExist:
+        messages.error(request, "El presupuesto no existe.")
+        return redirect('budgets_list') 
+
+    
+    items_para_mp = []
+    for item in budget.items.all(): 
+        items_para_mp.append({
+            "title": item.product.nombre,
+            "quantity": item.quantity,
+            "unit_price": float(item.price), 
+            "currency_id": "ARS" 
+        })
+
+    
+    preference_data = {
+        "items": items_para_mp,
+        
+        
+        "back_urls": {
+            "success": request.build_absolute_uri('/payment/success/'), 
+            "failure": request.build_absolute_uri('/payment/failure/'),
+            "pending": request.build_absolute_uri('/payment/pending/')
+        },
+        "auto_return": "approved",
+        
+        
+        "external_reference": budget.id, 
+    }
+
+    try:
+        
+        preference_response = sdk.preference().create(preference_data)
+        preference = preference_response["response"]
+        
+        
+        return redirect(preference["init_point"])
+
+    except Exception as e:
+        messages.error(request, f"Error al contactar con MercadoPago: {e}")
+        return redirect('view_budget', budget_id=budget.id)
+
+
+
+def payment_success(request):
+    """
+    Página a la que vuelve el usuario si el pago fue exitoso.
+    """
+    return render(request, 'payment_success.html')
+
+def payment_failure(request):
+    """
+    Página a la que vuelve el usuario si el pago falla.
+    """
+    return render(request, 'payment_failure.html')
+
+def payment_pending(request):
+    """
+    Página a la que vuelve el usuario si el pago queda pendiente.
+    """
+    return render(request, 'payment_pending.html')

@@ -1,8 +1,18 @@
+body {
+    
+    background-image: url('../images/interfaz\ principal.png');
+    background-color: #FFF0F5; 
+    background-position: center top;
+    background-repeat: no-repeat;
+    background-size: cover;
+    background-attachment: fixed; 
+}
+
 * {
   font-family: 'Times New Roman', Times, serif;
 }
 
-/* === Resto de estilos generales (sin cambios) === */
+
 .announcement-bar { 
   background-color: #ffe4f4;
   color: #522b0b;
@@ -237,7 +247,7 @@ body .container-fluid, body .container {
   border: 2px solid white;
 }
 
-/* === GRID DE PRODUCTOS - ESTILO ONCITY === */
+
 .productos-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
