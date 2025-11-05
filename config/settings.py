@@ -59,6 +59,23 @@ AUTHENTICATION_BACKENDS = [
     "allauth.account.auth_backends.AuthenticationBackend",
 ]
 
+# Allauth configuration
+SOCIALACCOUNT_PROVIDERS = {
+    'google': {
+        'SCOPE': [
+            'profile',
+            'email',
+        ],
+        'AUTH_PARAMS': {
+            'access_type': 'online',
+        }
+    }
+}
+
+# Google OAuth settings - these will be configured via environment variables in production
+SOCIALACCOUNT_GOOGLE_CLIENT_ID = config('SOCIALACCOUNT_GOOGLE_CLIENT_ID', default='')
+SOCIALACCOUNT_GOOGLE_SECRET = config('SOCIALACCOUNT_GOOGLE_SECRET', default='')
+
 LOGIN_REDIRECT_URL = "home"
 LOGOUT_REDIRECT_URL = "home"
 ACCOUNT_LOGIN_METHODS = {"email", "username"}
