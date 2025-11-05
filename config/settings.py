@@ -68,13 +68,18 @@ SOCIALACCOUNT_PROVIDERS = {
         ],
         'AUTH_PARAMS': {
             'access_type': 'online',
-        }
+        },
+        'OAUTH_PKCE_ENABLED': True,  # Enable PKCE for enhanced security
     }
 }
 
 # Google OAuth settings - these will be configured via environment variables in production
 SOCIALACCOUNT_GOOGLE_CLIENT_ID = config('SOCIALACCOUNT_GOOGLE_CLIENT_ID', default='')
 SOCIALACCOUNT_GOOGLE_SECRET = config('SOCIALACCOUNT_GOOGLE_SECRET', default='')
+
+# Additional security settings for OAuth
+SOCIALACCOUNT_LOGIN_ON_GET = True
+ACCOUNT_LOGOUT_ON_GET = True
 
 LOGIN_REDIRECT_URL = "home"
 LOGOUT_REDIRECT_URL = "home"
