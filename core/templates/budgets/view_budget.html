@@ -60,21 +60,46 @@
     </main>
 </div>
 
+    <!-- Hidden CSRF token for AJAX requests -->
+    {% csrf_token %}
+
 <script>
     document.getElementById('send-budget-btn').addEventListener('click', function() {
         const budgetId = this.getAttribute('data-budget-id');
         
+        const btn = this;
+        const originalText = btn.innerHTML;
+        
+        // Show loading state
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Enviando...';
+
+        const messageDiv = document.getElementById('message');
+        messageDiv.style.display = 'none';
+
         fetch('{% url "generate_budget" %}', {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/x-www-form-urlencoded',
+                'Content-Type': 'application/json',
                 'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
             },
-            body: 'budget_id=' + budgetId
+            body: JSON.stringify({
+                'budget_id': budgetId
+            })
         })
-        .then(response => response.json())
+        .then(response => {
+            // Check if the response is JSON before parsing
+            const contentType = response.headers.get("content-type");
+            if (contentType && contentType.includes("application/json")) {
+                return response.json();
+            } else {
+                // If not JSON, return an error indicating HTML response
+                return response.text().then(text => {
+                    throw new Error("Server returned HTML instead of JSON: " + text.substring(0, 200) + "...");
+                });
+            }
+        })
         .then(data => {
-            const messageDiv = document.getElementById('message');
             if (data.message) {
                 messageDiv.innerHTML = '<div class="alert alert-success">' + data.message + '</div>';
                 messageDiv.style.display = 'block';
@@ -84,9 +109,14 @@
             }
         })
         .catch(error => {
-            const messageDiv = document.getElementById('message');
-            messageDiv.innerHTML = '<div class="alert alert-danger">Error de conexión: ' + error + '</div>';
+            console.error('Error sending budget:', error);
+            messageDiv.innerHTML = '<div class="alert alert-danger">Error de conexión: ' + error.message + '</div>';
             messageDiv.style.display = 'block';
+        })
+        .finally(() => {
+            // Restore button state
+            btn.disabled = false;
+            btn.innerHTML = originalText;
         });
     });
 </script>

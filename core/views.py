@@ -17,6 +17,8 @@ def home(request):
 def lista_productos(request):
     return render(request, 'lista_productos.html')
 
+import json
+
 @login_required
 @require_http_methods(["POST"])
 def generate_and_send_budget(request):
@@ -24,29 +26,51 @@ def generate_and_send_budget(request):
     View to generate a budget PDF and send it via email
     """
     try:
-        # Get data from request
-        budget_id = request.POST.get('budget_id')
+        # Handle both form data and JSON data for backward compatibility
+        budget_id = None
+        
+        # Check if the request contains JSON data
+        if request.content_type == 'application/json':
+            try:
+                data = json.loads(request.body)
+                budget_id = data.get('budget_id')
+            except json.JSONDecodeError:
+                return JsonResponse({'error': 'Invalid JSON data'}, status=400)
+        else:
+            # Handle form data (legacy support)
+            budget_id = request.POST.get('budget_id')
+        
         if not budget_id:
             return JsonResponse({'error': 'Budget ID is required'}, status=400)
-        
+
         # Get the budget
-        budget = Budget.objects.get(id=budget_id, user=request.user)
-        
-        # Generate PDF
-        pdf_buffer = generate_budget_pdf(budget)
-        
-        # Send email with PDF
-        email_sent = send_budget_email(budget, pdf_buffer)
-        
+        try:
+            budget = Budget.objects.get(id=budget_id, user=request.user)
+        except Budget.DoesNotExist:
+            return JsonResponse({'error': 'Budget not found'}, status=404)
+
+        # Generate PDF - wrap in try-catch to ensure JSON response
+        try:
+            pdf_buffer = generate_budget_pdf(budget)
+        except Exception as pdf_error:
+            return JsonResponse({'error': f'Error generating PDF: {str(pdf_error)}'}, status=500)
+
+        # Send email with PDF - wrap in try-catch to ensure JSON response
+        try:
+            email_sent = send_budget_email(budget, pdf_buffer)
+        except Exception as email_error:
+            return JsonResponse({'error': f'Error sending email: {str(email_error)}'}, status=500)
+
         if email_sent:
             return JsonResponse({'message': 'Presupuesto enviado correctamente'})
         else:
             return JsonResponse({'error': 'Error al enviar el presupuesto por email'}, status=500)
-    
-    except Budget.DoesNotExist:
-        return JsonResponse({'error': 'Budget not found'}, status=404)
+
     except Exception as e:
-        return JsonResponse({'error': str(e)}, status=500)
+        # Catch any other unexpected exceptions and return JSON
+        import logging
+        logging.exception(f"Unexpected error in generate_and_send_budget: {str(e)}")
+        return JsonResponse({'error': f'Unexpected error: {str(e)}'}, status=500)
 
 def download_budget_pdf(request, budget_id):
     """
