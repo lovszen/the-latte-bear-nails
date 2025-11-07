@@ -28,44 +28,44 @@ def create_budget_from_cart(request):
     """
     View to create a budget from cart items
     """
-    if request.method == 'POST':
-        title = request.POST.get('title')
-        customer_name = request.POST.get('customer_name')
+    try:
+        if request.method == 'POST':
+            title = request.POST.get('title')
+            customer_name = request.POST.get('customer_name')
 
-        # Always send to the logged-in user's email (no customer email input)
-        customer_email = request.user.email
+            # Always send to the logged-in user's email (no customer email input)
+            customer_email = request.user.email
 
-        # If customer name is not provided, use the user's username
-        if not customer_name or customer_name == '':
-            customer_name = request.user.username
+            # If customer name is not provided, use the user's username
+            if not customer_name or customer_name == '':
+                customer_name = request.user.username
 
-        # Handle both comma-separated strings and multiple inputs
-        product_ids_raw = request.POST.getlist('product_ids')
-        quantities_raw = request.POST.getlist('quantities')
+            # Handle both comma-separated strings and multiple inputs
+            product_ids_raw = request.POST.getlist('product_ids')
+            quantities_raw = request.POST.getlist('quantities')
 
-        # Parse product_ids: handle both list format and comma-separated string format
-        product_ids = []
-        for pid in product_ids_raw:
-            if ',' in pid:
-                # Split comma-separated string
-                product_ids.extend([int(id.strip()) for id in pid.split(',') if id.strip().isdigit()])
-            else:
-                # Single ID
-                if pid.isdigit():
-                    product_ids.append(int(pid))
+            # Parse product_ids: handle both list format and comma-separated string format
+            product_ids = []
+            for pid in product_ids_raw:
+                if ',' in pid:
+                    # Split comma-separated string
+                    product_ids.extend([int(id.strip()) for id in pid.split(',') if id.strip().isdigit()])
+                else:
+                    # Single ID
+                    if pid.isdigit():
+                        product_ids.append(int(pid))
 
-        # Parse quantities: handle both list format and comma-separated string format
-        quantities = []
-        for qty in quantities_raw:
-            if ',' in qty:
-                # Split comma-separated string
-                quantities.extend([int(q.strip()) for q in qty.split(',') if q.strip().isdigit()])
-            else:
-                # Single quantity
-                if qty.isdigit():
-                    quantities.append(int(qty))
+            # Parse quantities: handle both list format and comma-separated string format
+            quantities = []
+            for qty in quantities_raw:
+                if ',' in qty:
+                    # Split comma-separated string
+                    quantities.extend([int(q.strip()) for q in qty.split(',') if q.strip().isdigit()])
+                else:
+                    # Single quantity
+                    if qty.isdigit():
+                        quantities.append(int(qty))
 
-        try:
             # Validate required fields
             if not title:
                 return JsonResponse({'success': False, 'error': 'Falta el título del presupuesto'})
@@ -131,14 +131,18 @@ def create_budget_from_cart(request):
             else:
                 return JsonResponse({'success': False, 'error': 'Error al enviar el email'})
 
-        except Producto.DoesNotExist:
-            return JsonResponse({'success': False, 'error': 'Producto no encontrado'})
-        except ValueError as e:
-            return JsonResponse({'success': False, 'error': f'Error de formato en datos: {str(e)}'})
-        except Exception as e:
-            import logging
-            logging.exception(f"Unexpected error in create_budget_from_cart: {str(e)}")
-            return JsonResponse({'success': False, 'error': str(e)})
+    except Producto.DoesNotExist:
+        import logging
+        logging.exception("Producto not found in create_budget_from_cart")
+        return JsonResponse({'success': False, 'error': 'Producto no encontrado'})
+    except ValueError as e:
+        import logging
+        logging.exception(f"Value error in create_budget_from_cart: {str(e)}")
+        return JsonResponse({'success': False, 'error': f'Error de formato en datos: {str(e)}'})
+    except Exception as e:
+        import logging
+        logging.exception(f"Unexpected error in create_budget_from_cart: {str(e)}")
+        return JsonResponse({'success': False, 'error': str(e)})
 
 @login_required
 @require_POST
