@@ -8,6 +8,8 @@ from .models import Producto
 import mercadopago
 from django.conf import settings
 import json
+import threading
+import logging
 
 try:
     sdk = mercadopago.SDK(settings.MERCADOPAGO_ACCESS_TOKEN)
@@ -114,37 +116,44 @@ def create_budget_from_cart(request):
         budget.total_amount = total
         budget.save()
 
-        # Generate PDF and send via email - with enhanced error handling
+        # Generate PDF - with enhanced error handling
         try:
             pdf_buffer = generate_budget_pdf(budget)
         except Exception as pdf_error:
-            import logging
             logging.exception(f"Error generating budget PDF: {str(pdf_error)}")
             return JsonResponse({'success': False, 'error': f'Error generando PDF: {str(pdf_error)}'})
 
+        # Try to send email, but don't let email failures crash the entire operation
+        # Instead, return success immediately and send email in the background
         try:
-            email_sent = send_budget_email(budget, pdf_buffer)
+            # Start email sending in a separate thread to avoid blocking
+            def send_email_async():
+                try:
+                    email_sent = send_budget_email(budget, pdf_buffer)
+                    if not email_sent:
+                        logging.warning(f"Failed to send budget email for budget {budget.id}")
+                except Exception as email_error:
+                    logging.exception(f"Exception during async email sending for budget {budget.id}: {str(email_error)}")
+            
+            # Start the email sending in a daemon thread so it doesn't prevent shutdown
+            email_thread = threading.Thread(target=send_email_async, daemon=True)
+            email_thread.start()
+            
+            # Return success immediately without waiting for email to be sent
+            return JsonResponse({'success': True, 'message': 'Presupuesto creado exitosamente'})
+            
         except Exception as email_error:
-            import logging
-            logging.exception(f"Error sending budget email: {str(email_error)}")
-            email_sent = False
-
-        # Always return JSON response since this will only be called via AJAX
-        if email_sent:
-            return JsonResponse({'success': True, 'message': 'Presupuesto creado y enviado exitosamente'})
-        else:
-            return JsonResponse({'success': False, 'error': 'Error al enviar el email'})
+            logging.exception(f"Unexpected error starting email thread: {str(email_error)}")
+            # Still return success - email is not critical for the budget creation process
+            return JsonResponse({'success': True, 'message': 'Presupuesto creado exitosamente (email pendiente de envío)'})
 
     except Producto.DoesNotExist:
-        import logging
         logging.exception("Producto not found in create_budget_from_cart")
         return JsonResponse({'success': False, 'error': 'Producto no encontrado'})
     except ValueError as e:
-        import logging
         logging.exception(f"Value error in create_budget_from_cart: {str(e)}")
         return JsonResponse({'success': False, 'error': f'Error de formato en datos: {str(e)}'})
     except Exception as e:
-        import logging
         logging.exception(f"Unexpected error in create_budget_from_cart: {str(e)}")
         return JsonResponse({'success': False, 'error': str(e)})
 
