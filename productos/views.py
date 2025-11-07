@@ -21,20 +21,19 @@ def lista_productos(request):
     productos = Producto.objects.all()
     return render(request, 'productos/tienda.html', {'productos': productos})
 
-# Remove the decorators and handle authentication manually
 def create_budget_from_cart(request):
     """
     View to create a budget from cart items
     """
+    # Check for POST method first
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'Método no permitido'}, status=405)
+    
+    # Manual authentication check 
+    if not hasattr(request, 'user') or not request.user.is_authenticated:
+        return JsonResponse({'success': False, 'error': 'Usuario no autenticado'}, status=401)
+
     try:
-        # Manual authentication check to ensure JSON response
-        if not request.user.is_authenticated:
-            return JsonResponse({'success': False, 'error': 'Usuario no autenticado'}, status=401)
-
-        # Manual POST method check to ensure JSON response
-        if request.method != 'POST':
-            return JsonResponse({'success': False, 'error': 'Método no permitido'}, status=405)
-
         title = request.POST.get('title')
         customer_name = request.POST.get('customer_name')
 
