@@ -15,7 +15,7 @@ from decouple import config
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
-ALLOWED_HOSTS = ["*"] 
+ALLOWED_HOSTS = ["*"]
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
@@ -38,16 +38,16 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'django.contrib.sites',
-    
+
     # Terceros
     'allauth',
     'allauth.account',
     'allauth.socialaccount',
     'django_bootstrap5',
-    
+
     "allauth.socialaccount.providers.google",
-    #"allauth.socialaccount.providers.github",  
-    
+    #"allauth.socialaccount.providers.github",
+
     'core',
     'productos',
 ]
@@ -96,7 +96,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'allauth.account.middleware.AccountMiddleware', 
+    'allauth.account.middleware.AccountMiddleware',
 ]
 
 ROOT_URLCONF = 'config.urls'
@@ -191,13 +191,12 @@ MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
 # Email configuration
-EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = 'smtp.gmail.com'
-EMAIL_PORT = 587
-EMAIL_USE_TLS = True
-EMAIL_HOST_USER = config('EMAIL_HOST_USER', default='')  # Retrieved from .env file
-EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD', default='')  # Retrieved from .env file
-DEFAULT_FROM_EMAIL = config('EMAIL_HOST_USER', default='thelattenails@gmail.com')
-
-# https://docs.djangoproMEDIA_URL = '/media/'
-MEDIA_ROOT = BASE_DIR / 'media'
+# Use environment variables for email settings
+EMAIL_BACKEND = config('EMAIL_BACKEND', default='django.core.mail.backends.smtp.EmailBackend')
+EMAIL_HOST = config('EMAIL_HOST', default='smtp.gmail.com')
+EMAIL_PORT = int(config('EMAIL_PORT', default='587'))
+EMAIL_USE_TLS = config('EMAIL_USE_TLS', default='True').lower() == 'true'
+EMAIL_USE_SSL = config('EMAIL_USE_SSL', default='False').lower() == 'true'
+EMAIL_HOST_USER = config('EMAIL_HOST_USER', default='')  
+EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD', default='')  
+DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default='noreply@thelattenails.com')

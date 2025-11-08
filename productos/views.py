@@ -125,27 +125,54 @@ def create_budget_from_cart(request):
 
         # Try to send email, but don't let email failures crash the entire operation
         # Instead, return success immediately and send email in the background
+        email_sent_successfully = False
+        email_error_msg = ""
+        
         try:
             # Start email sending in a separate thread to avoid blocking
             def send_email_async():
+                nonlocal email_sent_successfully, email_error_msg
                 try:
-                    email_sent = send_budget_email(budget, pdf_buffer)
-                    if not email_sent:
-                        logging.warning(f"Failed to send budget email for budget {budget.id}")
+                    # Log that we're attempting to send the email
+                    logging.info(f"Attempting to send budget email for budget {budget.id} to {budget.customer_email}")
+                    
+                    email_sent_result = send_budget_email(budget, pdf_buffer)
+                    
+                    if email_sent_result:
+                        email_sent_successfully = True
+                        logging.info(f"Successfully sent budget email for budget {budget.id}")
+                    else:
+                        email_error_msg = "Email sending returned False"
+                        logging.warning(f"Failed to send budget email for budget {budget.id} - function returned False")
                 except Exception as email_error:
+                    email_error_msg = f"Email sending failed: {str(email_error)}"
                     logging.exception(f"Exception during async email sending for budget {budget.id}: {str(email_error)}")
             
             # Start the email sending in a daemon thread so it doesn't prevent shutdown
             email_thread = threading.Thread(target=send_email_async, daemon=True)
             email_thread.start()
             
+            # Wait briefly to see if email sending had immediate issues
+            # Note: We don't wait for the entire email to send, just for potential immediate failures
+            email_thread.join(timeout=0.1)  # Very short timeout to check for immediate failures
+            
             # Return success immediately without waiting for email to be sent
-            return JsonResponse({'success': True, 'message': 'Presupuesto creado exitosamente'})
+            # If the email sending has immediate issues (like no SMTP config), we'll know from the flag
+            if email_error_msg:
+                return JsonResponse({
+                    'success': True, 
+                    'message': f'Presupuesto creado exitosamente (email pendiente - {email_error_msg})'
+                })
+            else:
+                return JsonResponse({'success': True, 'message': 'Presupuesto creado exitosamente'})
             
         except Exception as email_error:
             logging.exception(f"Unexpected error starting email thread: {str(email_error)}")
             # Still return success - email is not critical for the budget creation process
-            return JsonResponse({'success': True, 'message': 'Presupuesto creado exitosamente (email pendiente de envío)'})
+            return JsonResponse({
+                'success': True, 
+                'message': 'Presupuesto creado exitosamente (problema con envío de email)'
+            })
 
     except Producto.DoesNotExist:
         logging.exception("Producto not found in create_budget_from_cart")
