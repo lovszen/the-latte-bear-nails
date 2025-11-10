@@ -1,0 +1,29 @@
+.main-container {
+  padding-left: 0;
+  padding-right: 0;
+  max-width: 100%;
+}
+
+.tienda-container {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-lg);
+  padding: var(--spacing-lg);
+  width: 100%;
+  max-width: 1400px;
+  margin: 0 auto;
+  box-sizing: border-box;
+}
+
+.tienda-container aside {
+  display: none;
+}
+
+.productos-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: var(--spacing-md);
+  padding: var(--spacing-md);
+  width: 100%;
+  box-sizing: border-box;
+}

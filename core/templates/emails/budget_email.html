@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Presupuesto - {{ budget.title }}</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f9f9f9;
+        }
+        .header {
+            text-align: center;
+            padding: 20px 0;
+            border-bottom: 2px solid #ffe4f4;
+            background-color: white;
+            margin-bottom: 20px;
+        }
+        .logo {
+            max-width: 200px;
+            margin: 0 auto 10px;
+            display: block;
+        }
+        .title {
+            font-size: 24px;
+            color: #522b0b;
+            margin: 10px 0;
+        }
+        .customer-info {
+            background-color: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .budget-items {
+            background-color: white;
+            border-radius: 8px;
+            overflow: hidden;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        th {
+            background-color: #ffe4f4;
+            font-weight: bold;
+            color: #522b0b;
+        }
+        .total-row {
+            font-weight: bold;
+            background-color: #f8f8f8;
+        }
+        .total-amount {
+            font-size: 18px;
+            color: #522b0b;
+        }
+        .footer {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+            font-size: 14px;
+            background-color: white;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+        .thank-you {
+            text-align: center;
+            font-size: 18px;
+            color: #522b0b;
+            margin: 20px 0;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <img src="https://cdn.imgchest.com/files/05065870b1ff.png" alt="The Latte Bear Nails Logo" class="logo">
+        <h1 class="title">Presupuesto - {{ budget.title }}</h1>
+    </div>
+    
+    <div class="customer-info">
+        <h2>Información del Cliente</h2>
+        <p><strong>Cliente:</strong> {{ budget.customer_name }}</p>
+        <p><strong>Email:</strong> {{ budget.customer_email }}</p>
+        <p><strong>Fecha:</strong> {{ budget.created_at|date:"d/m/Y" }}</p>
+    </div>
+    
+    <div class="budget-items">
+        <table>
+            <thead>
+                <tr>
+                    <th>Producto</th>
+                    <th>Cantidad</th>
+                    <th>Precio Unit.</th>
+                    <th>Subtotal</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in budget.items.all %}
+                <tr>
+                    <td>{{ item.product.nombre }}</td>
+                    <td>{{ item.quantity }}</td>
+                    <td>$ {{ item.price|floatformat:2 }}</td>
+                    <td>$ {{ item.subtotal|floatformat:2 }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+            <tfoot>
+                <tr class="total-row">
+                    <td colspan="3"><strong>TOTAL:</strong></td>
+                    <td class="total-amount"><strong>$ {{ budget.total_amount|floatformat:2 }}</strong></td>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+    
+    <div class="thank-you">
+        ¡Gracias por confiar en The Latte Bear Nails!
+    </div>
+    
+    <div class="footer">
+        <p>Para cualquier consulta, no dude en contactarnos.</p>
+        <p>The Latte Bear Nails - Presupuesto generado automáticamente</p>
+    </div>
+</body>
+</html>

@@ -1,10 +1,47 @@
 let carrito = [];
 const contadorCarrito = document.getElementById('contador-carrito');
 
+function agregarProductoAlCarrito(productoId, productoNombre, productoPrecio, productoImagen) {
+    const productoExistente = carrito.find(item => item.id === productoId);
+    
+    let imagenFinal = productoImagen;
+    if (!productoImagen || productoImagen === 'None' || productoImagen === '') {
+        imagenFinal = '/static/images/placeholder.jpg';
+    }
+    
+    if (productoExistente) {
+        productoExistente.cantidad += 1;
+    } else {
+        carrito.push({
+            id: productoId,
+            nombre: productoNombre,
+            precio: parseFloat(productoPrecio),
+            imagen: imagenFinal,
+            cantidad: 1
+        });
+    }
+    
+    actualizarCarrito();
+}
+
 function actualizarCarrito() {
     const totalItems = carrito.reduce((sum, item) => sum + item.cantidad, 0);
     contadorCarrito.textContent = totalItems;
     localStorage.setItem('carrito', JSON.stringify(carrito));
+    
+    if (typeof window.updateBudgetButtonVisibility === 'function') {
+        window.updateBudgetButtonVisibility();
+    }
+}
+
+function sincronizarCarrito() {
+    const carritoGuardado = localStorage.getItem('carrito');
+    if (carritoGuardado) {
+        carrito = JSON.parse(carritoGuardado);
+    } else {
+        carrito = []; 
+    }
+    actualizarCarrito();
 }
 
 function mostrarModal(modalId) {
@@ -19,49 +56,64 @@ function cerrarModales() {
 
 function mostrarCarrito() {
     const contenidoDiv = document.getElementById('contenidoCarrito');
-    const botonesDiv = document.querySelector('#modalCarrito .budget-actions');
+    const resumenCantidad = document.getElementById('resumen-cantidad');
+    const resumenTotal = document.getElementById('resumen-total');
     
     if (carrito.length === 0) {
         contenidoDiv.innerHTML = `
             <div class="carrito-vacio">
-                <i class="fas fa-shopping-bag" style="font-size: 48px; margin-bottom: 15px; color: #ffe4f4;"></i>
+                <i class="fas fa-shopping-bag"></i>
                 <p>Tu carrito está vacío</p>
+                <p style="font-size: 0.9em; margin-top: 10px; color: #888;">Agrega algunos productos para continuar</p>
             </div>
         `;
-        botonesDiv.style.display = 'none';
+        resumenCantidad.textContent = '0';
+        resumenTotal.textContent = '$0.00';
     } else {
-        
         let total = 0;
+        let cantidadTotal = 0;
+        
         const itemsHTML = carrito.map(item => {
             const subtotal = item.precio * item.cantidad;
             total += subtotal;
+            cantidadTotal += item.cantidad;
+            
+            const imagenUrl = item.imagen && item.imagen !== 'None' ? item.imagen : '/static/images/placeholder.jpg';
             
             return `
-                <div class="item-carrito">
-                    <div class="item-carrito-info">
-                        <h4>${item.nombre}</h4>
-                        <div class="item-carrito-precio">$${item.precio}</div>
+                <div class="producto-carrito-card">
+                    <img src="${imagenUrl}" 
+                         class="producto-carrito-imagen" 
+                         alt="${item.nombre}"
+                         onerror="this.src='/static/images/placeholder.jpg'">
+                    
+                    <div class="producto-carrito-info">
+                        <div class="producto-carrito-nombre">${item.nombre}</div>
+                        <div class="producto-carrito-precio">$${item.precio}</div>
                     </div>
-                    <div class="item-carrito-cantidad">
+                    
+                    <div class="controles-cantidad">
                         <button class="btn-cantidad" data-id="${item.id}" data-cambio="-1">-</button>
-                        <span>${item.cantidad}</span>
+                        <span class="cantidad-actual">${item.cantidad}</span>
                         <button class="btn-cantidad" data-id="${item.id}" data-cambio="1">+</button>
                     </div>
-                    <button class="btn-eliminar-item" data-id="${item.id}"><i class="fas fa-trash"></i></button>
+                    
+                    <button class="btn-eliminar-item" data-id="${item.id}" title="Eliminar producto">
+                        <i class="fas fa-trash"></i>
+                    </button>
                 </div>
             `;
         }).join('');
         
-        contenidoDiv.innerHTML = `
-            ${itemsHTML}
-            <div class="carrito-total">
-                Total: $${total.toFixed(2)}
-            </div>
-        `;
-        
-        botonesDiv.style.display = 'block';
+        contenidoDiv.innerHTML = itemsHTML;
+        resumenCantidad.textContent = cantidadTotal;
+        resumenTotal.textContent = `$${total.toFixed(2)}`;
         
         agregarListenersBotonesCarrito();
+    }
+    
+    if (typeof window.updateBudgetButtonVisibility === 'function') {
+        window.updateBudgetButtonVisibility();
     }
     
     mostrarModal('modalCarrito');
@@ -91,7 +143,8 @@ function agregarListenersBotonesCarrito() {
 }
 
 function procederAlPagoDirecto() {
-    let carrito = JSON.parse(localStorage.getItem('carrito')) || [];
+    sincronizarCarrito();
+    
     if (carrito.length === 0) {
         alert("Tu carrito está vacío.");
         return;
@@ -121,10 +174,8 @@ function procederAlPagoDirecto() {
     .then(response => response.json())
     .then(data => {
         if (data.init_point) {
-            
             window.location.href = data.init_point;
         } else {
-            
             console.error('Error del servidor:', data.error);
             alert('Error al crear el pago: ' + data.error);
             botonPagarEl.disabled = false;
@@ -163,34 +214,16 @@ function cambiarCantidad(productoId, cambio) {
 }
 
 document.addEventListener('DOMContentLoaded', function() {
-    
-    const carritoGuardado = localStorage.getItem('carrito');
-    if (carritoGuardado) {
-        carrito = JSON.parse(carritoGuardado);
-        actualizarCarrito();
-    }
+    sincronizarCarrito();
 
     document.querySelectorAll('.btn-agregar-carrito').forEach(button => {
         button.addEventListener('click', function() {
             const productoId = this.getAttribute('data-producto-id');
             const productoNombre = this.getAttribute('data-producto-nombre');
             const productoPrecio = parseFloat(this.getAttribute('data-producto-precio'));
+            const productoImagen = this.getAttribute('data-producto-imagen');
 
-            const productoExistente = carrito.find(item => item.id === productoId);
-            
-            if (productoExistente) {
-                productoExistente.cantidad += 1;
-            } else {
-                carrito.push({
-                    id: productoId,
-                    nombre: productoNombre,
-                    precio: productoPrecio,
-                    cantidad: 1
-                });
-            }
-            
-            actualizarCarrito();
-            
+            agregarProductoAlCarrito(productoId, productoNombre, productoPrecio, productoImagen);
             
             this.textContent = '✓ Agregado';
             this.style.backgroundColor = '#c8e6c9';
@@ -204,9 +237,12 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    document.querySelector('.icono-carrito').addEventListener('click', function() {
-        mostrarCarrito();
-    });
+    const iconoCarrito = document.querySelector('.tienda-iconos .fa-shopping-bag').closest('div');
+    if (iconoCarrito) {
+        iconoCarrito.addEventListener('click', function() {
+            mostrarCarrito();
+        });
+    }
 
     document.querySelectorAll('.cerrar-modal').forEach(btn => {
         btn.addEventListener('click', cerrarModales);
@@ -218,11 +254,5 @@ document.addEventListener('DOMContentLoaded', function() {
                 cerrarModales();
             }
         });
-    });
-    
-    
-    document.getElementById('budgetForm').addEventListener('submit', function(e) {
-        e.preventDefault();
-        alert("La lógica de crear presupuesto está desactivada para la prueba.");
     });
 });

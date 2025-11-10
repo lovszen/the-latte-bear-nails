@@ -13,9 +13,31 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 from pathlib import Path
 from decouple import config
 
+# Cloudinary config
+
+
+CLOUDINARY_STORAGE = {
+    'CLOUD_NAME': 'tu_cloud_name',
+    'API_KEY': 'tu_api_key', 
+    'API_SECRET': 'tu_api_secret'
+}
+
+DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
+
+import cloudinary
+import cloudinary.uploader
+import cloudinary.api
+
+cloudinary.config( 
+    cloud_name=config('CLOUDINARY_CLOUD_NAME'),
+    api_key=config('CLOUDINARY_API_KEY'),
+    api_secret=config('CLOUDINARY_API_SECRET')
+)
+
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
-ALLOWED_HOSTS = ["*"] 
+ALLOWED_HOSTS = ["*"]
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
@@ -38,16 +60,18 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'django.contrib.sites',
-    
+
     # Terceros
     'allauth',
     'allauth.account',
     'allauth.socialaccount',
     'django_bootstrap5',
-    
+    'cloudinary',
+    'cloudinary_storage',
+
     "allauth.socialaccount.providers.google",
-    #"allauth.socialaccount.providers.github",  
-    
+    #"allauth.socialaccount.providers.github",
+
     'core',
     'productos',
 ]
@@ -59,21 +83,44 @@ AUTHENTICATION_BACKENDS = [
     "allauth.account.auth_backends.AuthenticationBackend",
 ]
 
+# Allauth configuration
+SOCIALACCOUNT_PROVIDERS = {
+    'google': {
+        'SCOPE': [
+            'profile',
+            'email',
+        ],
+        'AUTH_PARAMS': {
+            'access_type': 'online',
+        },
+        'OAUTH_PKCE_ENABLED': True,  # Enable PKCE for enhanced security
+    }
+}
+
+# Google OAuth settings - these will be configured via environment variables in production
+SOCIALACCOUNT_GOOGLE_CLIENT_ID = config('SOCIALACCOUNT_GOOGLE_CLIENT_ID', default='')
+SOCIALACCOUNT_GOOGLE_SECRET = config('SOCIALACCOUNT_GOOGLE_SECRET', default='')
+
+# Additional security settings for OAuth
+SOCIALACCOUNT_LOGIN_ON_GET = True
+ACCOUNT_LOGOUT_ON_GET = True
+
 LOGIN_REDIRECT_URL = "home"
 LOGOUT_REDIRECT_URL = "home"
 ACCOUNT_LOGIN_METHODS = {"email", "username"}
 ACCOUNT_SIGNUP_FIELDS = ["email*", "username*", "password1*", "password2*"]
-MERCADOPAGO_ACCESS_TOKEN = config('APP_USR-7817171409735399-110418-5d089910efe222b19646dcaf871cfaab-2967305738', default='')
+MERCADOPAGO_ACCESS_TOKEN = config('MERCADOPAGO_ACCESS_TOKEN', default='')
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'allauth.account.middleware.AccountMiddleware', 
+    'allauth.account.middleware.AccountMiddleware',
 ]
 
 ROOT_URLCONF = 'config.urls'
@@ -100,12 +147,21 @@ WSGI_APPLICATION = 'config.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+import os
+if os.environ.get('DATABASE_URL'):
+    # Production database (PostgreSQL on Render)
+    import dj_database_url
+    DATABASES = {
+        'default': dj_database_url.parse(os.environ.get('DATABASE_URL'))
     }
-}
+else:
+    # Development database (SQLite)
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
+    }
 
 
 # Password validation
@@ -144,19 +200,27 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 
-
 STATICFILES_DIRS = [
     BASE_DIR / "static",
 ]
 
-# Email configuration
-EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = 'smtp.gmail.com'
-EMAIL_PORT = 587
-EMAIL_USE_TLS = True
-EMAIL_HOST_USER = config('EMAIL_HOST_USER', default='')  # Retrieved from .env file
-EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD', default='')  # Retrieved from .env file
-DEFAULT_FROM_EMAIL = config('EMAIL_HOST_USER', default='thelattenails@gmail.com')
+# Static files for production
+STATIC_ROOT = BASE_DIR / 'staticfiles'
 
-# https://docs.djangoproMEDIA_URL = '/media/'
+# WhiteNoise configuration
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+
+# Media files
+MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
+
+# Email configuration
+# Use environment variables for email settings
+EMAIL_BACKEND = config('EMAIL_BACKEND', default='django.core.mail.backends.smtp.EmailBackend')
+EMAIL_HOST = config('EMAIL_HOST', default='smtp.gmail.com')
+EMAIL_PORT = int(config('EMAIL_PORT', default='587'))
+EMAIL_USE_TLS = config('EMAIL_USE_TLS', default='True').lower() == 'true'
+EMAIL_USE_SSL = config('EMAIL_USE_SSL', default='False').lower() == 'true'
+EMAIL_HOST_USER = config('EMAIL_HOST_USER', default='')  
+EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD', default='')  
+DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default='noreply@thelattenails.com')

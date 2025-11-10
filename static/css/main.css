@@ -1,0 +1,13 @@
+@import url('base/variables.css');
+@import url('base/reset.css');
+@import url('base/typography.css');
+@import url('layouts/header.css');
+@import url('layouts/grid.css');
+@import url('components/buttons.css');
+@import url('components/cards.css');
+@import url('components/navbar.css');
+@import url('components/modals.css');
+@import url('components/carrito.css');
+@import url('pages/home.css');
+@import url('pages/tienda.css');
+@import url('utilities/responsive.css');

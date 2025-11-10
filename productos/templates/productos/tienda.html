@@ -19,7 +19,7 @@
                     <i class="fas fa-robot"></i>
                 </div>
                 
-                <div class="icono-carrito" title="Carrito de compras">
+                <div class="icono-carrito" title="Carrito de compras" style="cursor: pointer;">
                     <i class="fas fa-shopping-bag"></i>
                     <span class="contador-carrito" id="contador-carrito">0</span>
                 </div>
@@ -30,7 +30,7 @@
         <div class="productos-grid">
             {% for producto in productos %}
             <div class="producto-card">
-                <div class="producto-imagen-container">
+                <div class="producto-imagen-container" onclick="mostrarDetalleProducto('{{ producto.id }}')">
                     {% if producto.imagen %}
                         <img src="{{ producto.imagen.url }}" class="producto-imagen" alt="{{ producto.nombre }}">
                     {% else %}
@@ -39,7 +39,25 @@
                 </div>
 
                 <div class="producto-info">
-                    <h3 class="producto-nombre">{{ producto.nombre }}</h3>
+                    <h3 class="producto-nombre" onclick="mostrarDetalleProducto('{{ producto.id }}')">
+                        {{ producto.nombre }}
+                    </h3>
+                    
+                    <div class="producto-detalles-rapidos">
+                        <div class="detalle-item">
+                            <span class="detalle-label">Forma:</span>
+                            <span class="detalle-valor">{{ producto.get_forma_display }}</span>
+                        </div>
+                        <div class="detalle-item">
+                            <span class="detalle-label">Tamaño:</span>
+                            <span class="detalle-valor">{{ producto.get_tamaño_display }}</span>
+                        </div>
+                        <div class="detalle-item">
+                            <span class="detalle-label">Color:</span>
+                            <span class="detalle-valor">{{ producto.get_color_principal_display }}</span>
+                        </div>
+                    </div>
+                    
                     <div class="producto-precios">
                         <span class="precio-final">${{ producto.precio }}</span>
                     </div>
@@ -47,7 +65,8 @@
                     <button class="btn-agregar-carrito"
                             data-producto-id="{{ producto.id }}"
                             data-producto-nombre="{{ producto.nombre }}"
-                            data-producto-precio="{{ producto.precio }}">
+                            data-producto-precio="{{ producto.precio }}"
+                            data-producto-imagen="{% if producto.imagen %}{{ producto.imagen.url }}{% else %}{% endif %}">
                         Agregar al Carrito
                     </button>
                 </div>
@@ -64,27 +83,46 @@
 </div>
 
 <div id="modalProducto" class="modal">
-    <div class="modal-contenido" style="max-width: 800px;">
+    <div class="modal-contenido modal-producto-detalle">
         <button class="cerrar-modal">&times;</button>
-        <div class="producto-detalle" id="contenidoProducto"></div>
+        <div class="producto-detalle-completo" id="contenidoProducto"></div>
     </div>
 </div>
 
 <div id="modalCarrito" class="modal">
-    <div class="modal-contenido" style="max-width: 700px;">
+    <div class="modal-contenido" style="max-width: 1200px; width: 95%;">
         <button class="cerrar-modal">&times;</button>
-        <h2 class="carrito-titulo">Tu Carrito</h2>
+        <h2 class="carrito-titulo">Tu Carrito de Compras</h2>
         
-        <div id="contenidoCarrito"></div>
-        
-        <div class="budget-actions mt-3">
-            <button id="btn-proceder-pago" class="btn btn-primary w-100 mb-2" style="background-color: #ffc0cb; border-color: #ffc0cb; color: #522b0b; font-weight: bold; padding: 10px;">
-                <i class="bi bi-credit-card"></i> Proceder al Pago
-            </button>
+        <div class="carrito-layout">
+            <div class="carrito-productos">
+                <div id="contenidoCarrito"></div>
+            </div>
             
-            <button id="create-budget-btn" class="btn btn-success w-100 mb-2">Crear Presupuesto</button>
-
-            <div id="budget-form-target" style="display: none;"></div>
+            <div class="carrito-sidebar">
+                <div class="info-box resumen-pedido">
+                    <h4>Resumen de tu Pedido</h4>
+                    <div class="resumen-datos">
+                        <div class="resumen-item">
+                            <span>Cantidad de productos:</span>
+                            <strong id="resumen-cantidad">0</strong>
+                        </div>
+                        <div class="resumen-item total-final">
+                            <span>Total a pagar:</span>
+                            <strong id="resumen-total">$0.00</strong>
+                        </div>
+                    </div>
+                    
+                    <div class="acciones-carrito">
+                        <button id="btn-proceder-pago" class="btn-pago">
+                            <i class="bi bi-credit-card"></i> Proceder al Pago
+                        </button>
+                        <button id="create-budget-btn" class="btn-presupuesto">
+                            <i class="bi bi-file-text"></i> Crear Presupuesto
+                        </button>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 </div>
@@ -95,180 +133,375 @@
         <h2 class="carrito-titulo">Crear Presupuesto</h2>
         
         <form id="budgetForm">
-            {% csrf_token %} 
+            {% csrf_token %}
             <div id="budget-fields">
                 <div class="mb-3">
                     <label for="budgetTitle" class="form-label">Título del Presupuesto</label>
                     <input type="text" class="form-control" id="budgetTitle" name="title" required>
                 </div>
+                <div class="mb-3">
+                    <label for="customerName" class="form-label">Nombre del Cliente</label>
+                    <input type="text" class="form-control" id="customerName" name="customer_name" value="{{ user.username }}" required>
+                </div>
             </div>
-            
             <div id="cart-items-container"></div>
-            
             <button type="submit" class="btn btn-primary">Crear Presupuesto y Enviar por Email</button>
         </form>
     </div>
 </div>
 
 <script src="{% static 'js/carrito.js' %}"></script>
+<script src="{% static 'js/productos.js' %}"></script>
+<script src="{% static 'js/tienda.js' %}"></script>
+
 <script>
-    function updateBudgetButtonVisibility() {
-        const cartItems = JSON.parse(localStorage.getItem('carrito') || '[]');
-        const createBudgetBtn = document.getElementById('create-budget-btn');
-        const sendEmailBtn = document.getElementById('send-budget-email-btn');
-        
-        if (cartItems.length > 0) {
-            createBudgetBtn.style.display = 'block';
-            sendEmailBtn.style.display = 'block';
-        } else {
-            createBudgetBtn.style.display = 'none';
-            sendEmailBtn.style.display = 'none';
-        }
-    }
-    
-    function actualizarCarritoDisplay() {
-        if (typeof mostrarCarrito === 'function') {
-            mostrarCarrito();
-        }
-        updateBudgetButtonVisibility();
-    }
-    
-    document.getElementById('create-budget-btn').addEventListener('click', function() {
-        document.querySelectorAll('.modal').forEach(modal => {
-            modal.classList.remove('mostrar');
-        });
-        
-        document.getElementById('modalCrearPresupuesto').classList.add('mostrar');
-        
-        const cartItems = JSON.parse(localStorage.getItem('carrito') || '[]');
-        if (cartItems.length > 0) {
-            document.getElementById('cart-items-container').innerHTML = '';
-            
-            document.getElementById('budgetTitle').value = '';
-            document.getElementById('customerName').value = '';
-            
-            cartItems.forEach(item => {
-                const productInput = document.createElement('input');
-                productInput.type = 'hidden';
-                productInput.name = 'product_ids';
-                productInput.value = item.id;
-                
-                const quantityInput = document.createElement('input');
-                quantityInput.type = 'hidden';
-                quantityInput.name = 'quantities';
-                quantityInput.value = item.cantidad;
-                
-                document.getElementById('cart-items-container').appendChild(productInput);
-                document.getElementById('cart-items-container').appendChild(quantityInput);
-            });
-        }
-    });
-    
-    document.getElementById('send-budget-email-btn').addEventListener('click', function() {
-        document.querySelectorAll('.modal').forEach(modal => {
-            modal.classList.remove('mostrar');
-        });
-        
-        document.getElementById('modalCrearPresupuesto').classList.add('mostrar');
-        
-        document.querySelector('.carrito-titulo').textContent = 'Enviar Presupuesto por Email';
-        
-        const cartItems = JSON.parse(localStorage.getItem('carrito') || '[]');
-        if (cartItems.length > 0) {
-            document.getElementById('cart-items-container').innerHTML = '';
-            
-            document.getElementById('budgetTitle').value = '';
-            document.getElementById('customerName').value = '';
-            
-            cartItems.forEach(item => {
-                const productInput = document.createElement('input');
-                productInput.type = 'hidden';
-                productInput.name = 'product_ids';
-                productInput.value = item.id;
-                
-                const quantityInput = document.createElement('input');
-                quantityInput.type = 'hidden';
-                quantityInput.name = 'quantities';
-                quantityInput.value = item.cantidad;
-                
-                document.getElementById('cart-items-container').appendChild(productInput);
-                document.getElementById('cart-items-container').appendChild(quantityInput);
-            });
-        }
-    });
-    
-    document.getElementById('budgetForm').addEventListener('submit', function(e) {
-        e.preventDefault();
-        
-        const formData = new FormData(this);
-        
-        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
-        formData.append('csrfmiddlewaretoken', csrfToken);
-        
-        const productInputs = document.querySelectorAll('#cart-items-container input[name="product_ids"]');
-        const quantityInputs = document.querySelectorAll('#cart-items-container input[name="quantities"]');
-        
-        const productIds = Array.from(productInputs).map(input => input.value);
-        const quantities = Array.from(quantityInputs).map(input => input.value);
-        
-        console.log('Sending budget data:', {
-            title: document.getElementById('budgetTitle').value,
-            customerName: document.getElementById('customerName').value,
-            productIds: productIds,
-            quantities: quantities
-        });
-        
-        fetch('{% url "create_budget_from_cart" %}', {
-            method: 'POST',
-            body: formData
-        })
-        .then(response => {
-            console.log('Response status:', response.status);
-            return response.json();
-        })
-        .then(data => {
-            console.log('Server response:', data);
-            if (data.success) {
-                alert('Presupuesto creado y enviado a su correo exitosamente.');
-                localStorage.removeItem('carrito');
-                
-                if (typeof mostrarCarrito === 'function') {
-                    mostrarCarrito();
-                }
-                document.getElementById('modalCrearPresupuesto').classList.remove('mostrar');
-                updateBudgetButtonVisibility();
-            } else {
-                alert('Error al crear el presupuesto: ' + data.error);
-                updateBudgetButtonVisibility();
-            }
-        })
-        .catch(error => {
-            console.error('Fetch error:', error);
-            alert('Ocurrió un error al enviar el presupuesto. Detalles: ' + error.message);
-            updateBudgetButtonVisibility();
-        });
-    });
-    
-    document.addEventListener('DOMContentLoaded', function() {
-        updateBudgetButtonVisibility();
-        
-        document.querySelectorAll('.cerrar-modal').forEach(button => {
-            button.addEventListener('click', function() {
-                document.querySelectorAll('.modal').forEach(modal => {
-                    modal.classList.remove('mostrar');
-                });
-            });
-        });
-        
-        document.querySelectorAll('.modal').forEach(modal => {
-            modal.addEventListener('click', function(e) {
-                if (e.target === this) {
-                    document.querySelectorAll('.modal').forEach(m => {
-                        m.classList.remove('mostrar');
-                    });
-                }
-            });
-        });
-    });
+    window.budgetCreateUrl = '{% url "create_budget_from_cart" %}';
 </script>
+
+<style>
+    .producto-card {
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+    }
+    
+    .producto-info {
+        display: flex;
+        flex-direction: column;
+        flex: 1;
+        padding: 15px;
+    }
+    
+    .producto-nombre {
+        margin-bottom: 10px;
+        min-height: auto;
+    }
+    
+    .producto-detalles-rapidos {
+        margin: 10px 0;
+        font-size: 0.85em;
+        flex: 1;
+    }
+    
+    .detalle-item {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 6px;
+        padding: 3px 0;
+    }
+    
+    .detalle-label {
+        font-weight: bold;
+        color: #666;
+    }
+    
+    .detalle-valor {
+        color: #333;
+    }
+    
+    .producto-precios {
+        margin: 15px 0 10px 0;
+        text-align: center;
+    }
+    
+    .precio-final {
+        font-size: 1.5em;
+        font-weight: bold;
+        color: #522b0b;
+    }
+    
+    .btn-agregar-carrito {
+        width: 100%;
+        padding: 12px;
+        margin-top: 10px;
+    }
+    
+    .modal-producto-detalle {
+        max-width: 900px !important;
+        width: 90%;
+    }
+    
+    .producto-detalle-completo .imagen-grande-container {
+        text-align: center;
+        margin-bottom: 20px;
+    }
+    
+    .producto-detalle-completo .imagen-grande {
+        max-width: 100%;
+        max-height: 500px;
+        cursor: zoom-in;
+        border-radius: 10px;
+        transition: transform 0.3s ease;
+    }
+    
+    .producto-detalle-completo .imagen-grande:hover {
+        transform: scale(1.02);
+    }
+    
+    .producto-detalle-completo .detalles-lado-derecho {
+        padding: 20px;
+    }
+    
+    .producto-detalle-completo .btn-agregar-detalle-pequeno {
+        padding: 8px 16px;
+        font-size: 0.9em;
+        background-color: #ffe4f4;
+        border: 1px solid #ffe4f4;
+        color: #522b0b;
+        border-radius: 5px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        width: auto;
+        margin-top: 15px;
+    }
+    
+    .producto-detalle-completo .btn-agregar-detalle-pequeno:hover {
+        background-color: #ffc0cb;
+        border-color: #ffc0cb;
+    }
+
+    .carrito-layout {
+        display: grid;
+        grid-template-columns: 1fr 350px;
+        gap: 30px;
+        margin-top: 20px;
+    }
+
+    .carrito-productos {
+        background: #f8f9fa;
+        border-radius: 15px;
+        padding: 20px;
+        max-height: 600px;
+        overflow-y: auto;
+    }
+
+    .carrito-sidebar {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+    }
+
+    .info-box {
+        background: white;
+        border-radius: 12px;
+        padding: 25px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        border: 1px solid #e9ecef;
+    }
+
+    .resumen-pedido h4 {
+        color: #522b0b;
+        margin-bottom: 20px;
+        font-size: 1.2em;
+    }
+
+    .resumen-datos {
+        margin-bottom: 25px;
+    }
+
+    .resumen-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 12px 0;
+        border-bottom: 1px solid #f0f0f0;
+    }
+
+    .resumen-item:last-child {
+        border-bottom: none;
+    }
+
+    .total-final {
+        font-size: 1.2em;
+        color: #522b0b;
+        background: #ffe4f4;
+        padding: 15px;
+        border-radius: 8px;
+        margin-top: 10px;
+    }
+
+    .acciones-carrito {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .btn-pago, .btn-presupuesto {
+        padding: 15px 20px;
+        border: none;
+        border-radius: 8px;
+        font-weight: 600;
+        font-size: 1em;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-align: center;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+    }
+
+    .btn-pago {
+        background: linear-gradient(135deg, #ff6b9c, #ff8eb4);
+        color: white;
+    }
+
+    .btn-pago:hover {
+        background: linear-gradient(135deg, #ff8eb4, #ff6b9c);
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(255, 107, 156, 0.3);
+    }
+
+    .btn-presupuesto {
+        background: linear-gradient(135deg, #ffe4f4, #ffc0cb);
+        color: #522b0b;
+        border: 2px solid #ffc0cb;
+    }
+
+    .btn-presupuesto:hover {
+        background: linear-gradient(135deg, #ffc0cb, #ffa8c5);
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(255, 192, 203, 0.3);
+    }
+
+    .producto-carrito-card {
+        display: grid;
+        grid-template-columns: 100px 1fr auto auto;
+        gap: 15px;
+        align-items: center;
+        background: white;
+        padding: 20px;
+        border-radius: 12px;
+        margin-bottom: 15px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        border: 1px solid #e9ecef;
+    }
+
+    .producto-carrito-imagen {
+        width: 100px;
+        height: 100px;
+        object-fit: cover;
+        border-radius: 8px;
+    }
+
+    .producto-carrito-info {
+        flex: 1;
+    }
+
+    .producto-carrito-nombre {
+        font-weight: 600;
+        color: #333;
+        margin-bottom: 5px;
+        font-size: 1.1em;
+    }
+
+    .producto-carrito-precio {
+        color: #522b0b;
+        font-weight: bold;
+        font-size: 1.1em;
+    }
+
+    .controles-cantidad {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        background: #f8f9fa;
+        padding: 8px 12px;
+        border-radius: 8px;
+    }
+
+    .btn-cantidad {
+        background: #ffe4f4;
+        border: 1px solid #ffc0cb;
+        color: #522b0b;
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        font-weight: bold;
+        transition: all 0.3s ease;
+    }
+
+    .btn-cantidad:hover {
+        background: #ffc0cb;
+        transform: scale(1.1);
+    }
+
+    .cantidad-actual {
+        font-weight: bold;
+        min-width: 30px;
+        text-align: center;
+    }
+
+    .btn-eliminar-item {
+        background: #ff6b6b;
+        color: white;
+        border: none;
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .btn-eliminar-item:hover {
+        background: #ff5252;
+        transform: scale(1.1);
+    }
+
+    .carrito-vacio {
+        text-align: center;
+        padding: 60px 20px;
+        color: #666;
+    }
+
+    .carrito-vacio i {
+        font-size: 64px;
+        color: #ffe4f4;
+        margin-bottom: 20px;
+    }
+
+    .carrito-vacio p {
+        font-size: 1.2em;
+        margin: 0;
+    }
+
+    #create-budget-btn {
+        display: none;
+    }
+
+    @media (max-width: 768px) {
+        .carrito-layout {
+            grid-template-columns: 1fr;
+            gap: 20px;
+        }
+        
+        .carrito-productos {
+            max-height: 400px;
+        }
+        
+        .producto-carrito-card {
+            grid-template-columns: 80px 1fr;
+            gap: 10px;
+        }
+        
+        .controles-cantidad {
+            grid-column: 1 / -1;
+            justify-content: center;
+            margin-top: 10px;
+        }
+        
+        .btn-eliminar-item {
+            grid-column: 2;
+            justify-self: end;
+        }
+    }
+</style>
+
 {% endblock %}

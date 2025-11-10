@@ -1,0 +1,78 @@
+.announcement-bar {
+  background-color: var(--color-primary);
+  color: var(--color-secondary);
+  font-size: var(--font-size-sm);
+  padding: var(--spacing-sm) 0;
+}
+
+.hero-header {
+  position: relative;
+  height: 180px;
+  background-image: url("../../images/press\ on.jpg");
+  background-repeat: no-repeat;
+  background-size: cover;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--spacing-md) var(--spacing-lg);
+}
+
+.home-page .hero-header {
+  height: 150px;
+}
+
+.site-logo {
+  max-width: 230px;
+  width: auto;
+  height: auto;
+}
+
+.home-page .site-logo {
+  max-width: 250px;
+}
+
+.login-icons {
+  position: absolute;
+  top: 0;
+  right: 0;
+  padding: var(--spacing-lg);
+}
+
+.login-icons a {
+  color: var(--color-secondary);
+  display: inline-block;
+  padding: var(--spacing-xs) var(--spacing-md);
+  margin: var(--spacing-xs) 0;
+  background-color: var(--color-primary);
+  border-radius: 25px;
+  text-decoration: none;
+  transition: all 0.3s ease;
+}
+
+.login-icons a:hover {
+  background-color: #ffd4f0;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.logged-in-user {
+  background-color: var(--color-primary);
+  border-radius: 25px;
+  padding: var(--spacing-xs) var(--spacing-md);
+  text-align: center;
+  min-width: 120px;
+}
+
+.logged-in-user .btn {
+  background-color: var(--color-secondary);
+  color: var(--color-white);
+  border-color: var(--color-secondary);
+  padding: 2px var(--spacing-xs);
+  font-size: var(--font-size-sm);
+}
+
+.logged-in-user .btn:hover {
+  background-color: #3a1f0d;
+  border-color: #3a1f0d;
+}

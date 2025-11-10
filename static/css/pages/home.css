@@ -1,0 +1,13 @@
+.oso-container {
+  position: relative;
+  margin: 0 auto;
+  padding: 0;
+  max-width: 100%;
+  min-height: 400px;
+}
+
+.oso-container img {
+  width: 100%;
+  height: auto;
+  display: block;
+}

@@ -1,6 +1,5 @@
 from django.db import models
-
-# Create your models here.
+from cloudinary.models import CloudinaryField
 
 class Producto(models.Model):
     color_choices = [
@@ -35,13 +34,14 @@ class Producto(models.Model):
         ('l', 'Tamaño 4, l'),
     ]
 
-    nombre = models.CharField(max_length = 40)
+    nombre = models.CharField(max_length=100)
     precio = models.DecimalField(max_digits=10, decimal_places=2)
-    imagen = models.ImageField(upload_to = 'productos/')
+    imagen = CloudinaryField('imagen')  
+    descripcion = models.TextField(blank=True)
     forma = models.CharField(max_length=20, choices=forma_choices, default='almendra')
     tamaño = models.CharField(max_length=10, choices=tamaño_choices, default='s')
-    color_principal = models.CharField(max_length = 20, choices = color_choices)
-    color_secundario = models.CharField(max_length = 20, choices = color_choices, blank=True, null=True)
+    color_principal = models.CharField(max_length=20, choices=color_choices)
+    color_secundario = models.CharField(max_length=20, choices=color_choices, blank=True, null=True)
     
     def __str__(self):
         if self.color_secundario:
