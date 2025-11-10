@@ -1,0 +1,395 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - Chat de Usuarios</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        
+        .header {
+            background-color: #333;
+            color: white;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 5px;
+        }
+        
+        .conversations-container {
+            display: flex;
+            gap: 20px;
+        }
+        
+        .conversations-list {
+            width: 300px;
+            background: white;
+            border-radius: 5px;
+            padding: 15px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        
+        .conversation-item {
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+            cursor: pointer;
+            margin-bottom: 5px;
+        }
+        
+        .conversation-item:hover {
+            background-color: #f0f0f0;
+        }
+        
+        .conversation-item.active {
+            background-color: #e3f2fd;
+            border-left: 3px solid #2196f3;
+        }
+        
+        .chat-area {
+            flex: 1;
+            background: white;
+            border-radius: 5px;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            height: 70vh;
+        }
+        
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 15px;
+            border-bottom: 1px solid #eee;
+            margin-bottom: 15px;
+        }
+        
+        .message {
+            margin-bottom: 10px;
+            padding: 8px 12px;
+            border-radius: 8px;
+            max-width: 70%;
+        }
+        
+        .user-message {
+            background-color: #e3f2fd;
+            margin-right: auto;
+        }
+        
+        .admin-message {
+            background-color: #f0f0f0;
+            margin-left: auto;
+        }
+        
+        .reply-form {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .reply-form input {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        
+        .reply-form button {
+            padding: 10px 20px;
+            background-color: #2196f3;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        
+        .reply-form button:hover {
+            background-color: #1976d2;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Administración de Chat de Usuarios</h1>
+        <p>Bienvenido, {{ user.username }} | <a href="{% url 'account_logout' %}" style="color: white;">Cerrar sesión</a></p>
+    </div>
+    
+    {% csrf_token %}
+    
+    <div class="conversations-container">
+        <div class="conversations-list">
+            <h3>Conversaciones</h3>
+            {% for email, data in conversations %}
+                <div class="conversation-item" onclick="loadConversation('{{ email }}', '{{ data.sender_name }}', event)">
+                    <strong>{{ data.sender_name }}</strong><br>
+                    <small>{{ email }}</small>
+                </div>
+            {% empty %}
+                <p>No hay mensajes de usuarios</p>
+            {% endfor %}
+        </div>
+        
+        <div class="chat-area">
+            <div id="chatMessages" class="chat-messages">
+                <p id="select-conversation">Selecciona una conversación para ver los mensajes</p>
+            </div>
+            <div class="reply-form">
+                <input type="text" id="replyMessage" placeholder="Escribe tu respuesta..." disabled>
+                <button onclick="sendAdminReply()" id="sendReplyBtn" disabled>Responder</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentEmail = null;
+        let currentSenderName = null;
+        let latestMessageTimestamp = null;
+        let pollingInterval = null;
+
+        function loadConversation(email, senderName, event) {
+            // Stop polling for the previous conversation
+            stopPolling();
+            
+            currentEmail = email;
+            currentSenderName = senderName;
+            
+            // Highlight selected conversation
+            document.querySelectorAll('.conversation-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            
+            // Only try to highlight the clicked element if event is provided and valid
+            if (event && event.currentTarget) {
+                event.currentTarget.classList.add('active');
+            } else {
+                // Fallback: find the element by email to highlight it
+                const conversationItems = document.querySelectorAll('.conversation-item');
+                conversationItems.forEach(item => {
+                    const smallElement = item.querySelector('small');
+                    if (smallElement && smallElement.textContent === email) {
+                        item.classList.add('active');
+                    }
+                });
+            }
+            
+            // Enable reply form
+            document.getElementById('replyMessage').disabled = false;
+            document.getElementById('sendReplyBtn').disabled = false;
+            
+            // Load messages for this conversation
+            fetch(`/api/chat/messages/${email}/`)
+                .then(response => response.json())
+                .then(messages => {
+                    displayMessages(messages);
+                    
+                    // Track the latest message timestamp
+                    latestMessageTimestamp = null;
+                    if (messages.length > 0) {
+                        // Find the most recent timestamp
+                        messages.forEach(msg => {
+                            if (!latestMessageTimestamp || msg.timestamp > latestMessageTimestamp) {
+                                latestMessageTimestamp = msg.timestamp;
+                            }
+                        });
+                    }
+                    
+                    // Start polling for new messages
+                    startPolling();
+                })
+                .catch(error => {
+                    console.error('Error loading messages:', error);
+                    // Start polling even if initial load failed
+                    startPolling();
+                });
+        }
+
+        function displayMessages(messages) {
+            const chatDiv = document.getElementById('chatMessages');
+            chatDiv.innerHTML = '';
+            
+            messages.forEach(msg => {
+                const messageDiv = document.createElement('div');
+                messageDiv.className = `message ${msg.message_type === 'user' ? 'user-message' : 'admin-message'}`;
+                
+                const sender = msg.message_type === 'user' ? 'Usuario' : 'Admin';
+                
+                let contentHTML = `<strong>${sender}:</strong> `;
+                
+                // Add message text if available
+                if (msg.message) {
+                    contentHTML += ` ${msg.message}`;
+                } else if (msg.image_url) {
+                    contentHTML += ` [Imagen]`;
+                }
+                
+                // Add image if available
+                if (msg.image_url) {
+                    contentHTML += `<br><img src="${msg.image_url}" alt="Imagen del mensaje" style="max-width: 200px; border-radius: 8px; margin-top: 5px;">`;
+                }
+                
+                contentHTML += `<br><small>${new Date(msg.timestamp).toLocaleString()}</small>`;
+                
+                messageDiv.innerHTML = contentHTML;
+                
+                chatDiv.appendChild(messageDiv);
+            });
+            
+            // Scroll to bottom after loading to show latest messages
+            setTimeout(() => {
+                chatDiv.scrollTop = chatDiv.scrollHeight;
+            }, 100); // Small delay to ensure DOM is updated
+        }
+        
+        // Function to add a single message to the chat (for new messages via polling)
+        function addMessageToChat(msg) {
+            const chatDiv = document.getElementById('chatMessages');
+            
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${msg.message_type === 'user' ? 'user-message' : 'admin-message'}`;
+            
+            const sender = msg.message_type === 'user' ? 'Usuario' : 'Admin';
+            
+            let contentHTML = `<strong>${sender}:</strong> `;
+            
+            // Add message text if available
+            if (msg.message) {
+                contentHTML += ` ${msg.message}`;
+            } else if (msg.image_url) {
+                contentHTML += ` [Imagen]`;
+            }
+            
+            // Add image if available
+            if (msg.image_url) {
+                contentHTML += `<br><img src="${msg.image_url}" alt="Imagen del mensaje" style="max-width: 200px; border-radius: 8px; margin-top: 5px;">`;
+            }
+            
+            contentHTML += `<br><small>${new Date(msg.timestamp).toLocaleString()}</small>`;
+            
+            messageDiv.innerHTML = contentHTML;
+            
+            chatDiv.appendChild(messageDiv);
+            // Auto-scroll to bottom to show latest message
+            chatDiv.scrollTop = chatDiv.scrollHeight;
+            
+            // Update latest timestamp
+            if (!latestMessageTimestamp || msg.timestamp > latestMessageTimestamp) {
+                latestMessageTimestamp = msg.timestamp;
+            }
+        }
+
+        function startPolling() {
+            // Stop any existing polling
+            stopPolling();
+            
+            // Poll every 3 seconds for new messages in the current conversation
+            pollingInterval = setInterval(async () => {
+                if (!currentEmail) {
+                    stopPolling();
+                    return;
+                }
+                
+                try {
+                    let url = `/api/chat/messages/${currentEmail}/`;
+                    if (latestMessageTimestamp) {
+                        // Only fetch messages newer than the latest one we've seen
+                        url += `?since=${encodeURIComponent(latestMessageTimestamp)}`;
+                    }
+                    
+                    const response = await fetch(url, {
+                        method: 'GET',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        }
+                    });
+                    
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    
+                    const newMessages = await response.json();
+                    
+                    if (Array.isArray(newMessages) && newMessages.length > 0) {
+                        // Add new messages to the chat
+                        newMessages.forEach(msg => {
+                            addMessageToChat(msg);
+                        });
+                    }
+                } catch (error) {
+                    console.error('Error polling for new messages:', error);
+                }
+            }, 3000); // Poll every 3 seconds
+        }
+        
+        function stopPolling() {
+            if (pollingInterval) {
+                clearInterval(pollingInterval);
+                pollingInterval = null;
+            }
+        }
+
+        function sendAdminReply() {
+            const replyMessage = document.getElementById('replyMessage').value;
+            if (!replyMessage.trim() || !currentEmail) {
+                alert('Por favor escribe un mensaje y selecciona una conversación');
+                return;
+            }
+
+            // Find the original message from this user to link to
+            fetch(`/api/chat/messages/${currentEmail}/`)
+                .then(response => response.json())
+                .then(messages => {
+                    // Get the most recent user message as the original
+                    const originalMessage = messages.filter(msg => msg.message_type === 'user').pop();
+                    
+                    if (!originalMessage) {
+                        alert('No se encontró el mensaje original para responder');
+                        return;
+                    }
+
+                    // Send admin reply
+                    fetch('/api/chat/reply/', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': getCSRFToken()
+                        },
+                        body: JSON.stringify({
+                            message: replyMessage,
+                            original_message: originalMessage.id
+                        })
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.id) {
+                            document.getElementById('replyMessage').value = '';
+                            // Don't reload the whole conversation, just add the message and let polling handle it
+                            // In this case, we'll reload to show the reply in context
+                            loadConversation(currentEmail, currentSenderName);
+                        } else {
+                            alert('Error al enviar la respuesta: ' + (data.error || 'Error desconocido'));
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        alert('Error al enviar la respuesta');
+                    });
+                })
+                .catch(error => {
+                    console.error('Error finding original message:', error);
+                });
+        }
+
+        function getCSRFToken() {
+            return document.querySelector('[name=csrfmiddlewaretoken]').value;
+        }
+        
+        // Stop polling when leaving the page
+        window.addEventListener('beforeunload', stopPolling);
+        window.addEventListener('pagehide', stopPolling);
+    </script>
+</body>
+</html>

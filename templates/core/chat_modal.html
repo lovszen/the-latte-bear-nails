@@ -1,0 +1,413 @@
+<div id="modalChat" class="modal">
+    <div class="modal-contenido" style="max-width: 600px; height: 80vh; display: flex; flex-direction: column;">
+        <button class="cerrar-modal">&times;</button>
+        <h2 class="carrito-titulo">Chat con Soporte</h2>
+
+        <div id="chatMessages" class="chat-messages-container" style="flex: 1; overflow-y: auto; padding: 15px; background-color: #f9f9f9; margin-bottom: 15px;">
+            <!-- Mensajes aparecerán aquí -->
+        </div>
+
+        <div class="chat-input-container" style="padding: 15px; background-color: #f0f0f0; border-top: 1px solid #ddd;">
+            <div class="chat-message-input" style="margin-bottom: 10px;">
+                <textarea id="chatMessage" placeholder="Escribe tu mensaje aquí..." class="form-control" style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; resize: vertical; min-height: 80px;"></textarea>
+            </div>
+
+            <div class="chat-image-preview" id="imagePreview" style="display: none; margin-bottom: 10px;">
+                <img id="previewImg" src="" alt="Vista previa" style="max-width: 100%; max-height: 150px; border-radius: 8px;">
+                <button type="button" id="removeImage" class="btn btn-sm btn-danger" style="position: absolute; top: 5px; right: 5px;">×</button>
+            </div>
+
+            <div class="chat-actions" style="display: flex; gap: 10px;">
+                <label for="chatImage" class="btn-image-upload" title="Subir imagen" style="background-color: #007bff; color: white; padding: 8px 15px; border-radius: 4px; cursor: pointer;">
+                    <i class="fas fa-image"></i> Imagen
+                </label>
+                <input type="file" id="chatImage" accept="image/*" style="display: none;">
+
+                <button type="button" id="sendChatMessage" class="btn btn-primary" style="flex: 1; background-color: #28a745; border: none; padding: 10px; border-radius: 4px;">
+                    <i class="fas fa-paper-plane"></i> Enviar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Chat functionality
+        const chatIcon = document.querySelector('.icono-chat-user');
+        const modalChat = document.getElementById('modalChat');
+        const chatImageInput = document.getElementById('chatImage');
+        const imagePreview = document.getElementById('imagePreview');
+        const previewImg = document.getElementById('previewImg');
+        const removeImage = document.getElementById('removeImage');
+        const sendChatMessageBtn = document.getElementById('sendChatMessage');
+        const chatMessageTextarea = document.getElementById('chatMessage');
+
+        // Function to get CSRF token from cookie
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    // Does this cookie string begin with the name we want?
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+
+        let displayedMessageIds = new Set(); // Track which messages are already displayed
+
+        // Function to reset the displayed messages tracker
+        function resetMessageTracker() {
+            displayedMessageIds = new Set();
+        }
+
+        // Function to add message to chat
+        function addMessageToChat(text, className, timestamp = null, imageUrl = null) {
+            const chatMessages = document.getElementById('chatMessages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `mensaje-chat ${className}`;
+            
+            let contentHTML = '';
+            
+            // Add text if present
+            if (text && text.trim() !== '') {
+                contentHTML += `<div class="message-text">${text}</div>`;
+            } else if (imageUrl) {
+                contentHTML += `<div class="message-text">[Imagen]</div>`;
+            }
+            
+            // Add image if present
+            if (imageUrl) {
+                contentHTML += `<div class="message-image"><img src="${imageUrl}" alt="Imagen del mensaje" style="max-width: 200px; border-radius: 8px; margin-top: 5px;"></div>`;
+            }
+
+            // Add timestamp if provided
+            if (timestamp) {
+                const date = new Date(timestamp);
+                const timeString = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                messageDiv.innerHTML = `${contentHTML}<div class="message-time" style="font-size: 0.7em; color: #666; text-align: right;">${timeString}</div>`;
+            } else {
+                messageDiv.innerHTML = contentHTML;
+            }
+            
+            chatMessages.appendChild(messageDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        // Load chat history from API
+        async function loadChatHistory() {
+            try {
+                const response = await fetch('/api/chat/list/', {
+                    method: 'GET',
+                    headers: {
+                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                    }
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                
+                // Check if data is an array or a paginated response object
+                let messages;
+                if (Array.isArray(data)) {
+                    // Direct array response
+                    messages = data;
+                } else if (data && typeof data === 'object' && Array.isArray(data.results)) {
+                    // Paginated response - use the results array
+                    messages = data.results;
+                } else {
+                    console.error('Invalid response format: expected an array or paginated object but got:', data);
+                    addMessageToChat('Error: Formato de respuesta inválido', 'mensaje-sistema');
+                    return;
+                }
+                
+                // Don't clear messages, just add new ones
+                messages.forEach(msg => {
+                    // Check if this message is already displayed using a combination of timestamp and content as identifier
+                    const messageKey = `${msg.timestamp}_${msg.message || ''}_${msg.id}`;
+                    
+                    if (!displayedMessageIds.has(messageKey)) {
+                        // Determine if it's a user or admin message
+                        const isUserMessage = msg.message_type === 'user';
+                        const isOwnMessage = isUserMessage; // Current user's messages
+                        const className = isOwnMessage ? 'mensaje-propio' : 'mensaje-ajeno';
+                        const senderName = isUserMessage ? 'Tú' : 'Admin';
+                        
+                        // Check if message has text, otherwise it might be image-only
+                        let messageText = '';
+                        if (msg.message) {
+                            messageText = `${senderName}: ${msg.message}`;
+                        } else if (msg.image_url) {
+                            messageText = `${senderName}: [Imagen]`;
+                        } else {
+                            messageText = `${senderName}: [Mensaje]`;
+                        }
+                        
+                        addMessageToChat(messageText, className, msg.timestamp, msg.image_url);
+                        displayedMessageIds.add(messageKey);
+                    }
+                });
+                
+                // Scroll to bottom after loading
+                const chatMessages = document.getElementById('chatMessages');
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+            } catch (error) {
+                console.error('Error loading chat history:', error);
+                console.error('Error details:', {
+                    message: error.message,
+                    name: error.name,
+                    stack: error.stack
+                });
+                
+                // Provide more specific error messages based on the error type
+                if (error.name === 'TypeError' && error.message.includes('forEach')) {
+                    addMessageToChat('Error: Formato de datos inválido en la respuesta del servidor', 'mensaje-sistema');
+                } else if (error.message.includes('HTTP error')) {
+                    addMessageToChat(`Error de red: ${error.message}`, 'mensaje-sistema');
+                } else {
+                    addMessageToChat('Error al cargar el historial de chat: ' + error.message, 'mensaje-sistema');
+                }
+            }
+        }
+
+        // Upload image to Cloudinary
+        async function uploadImageToCloudinary(file) {
+            // Check file size (2MB = 2 * 1024 * 1024 bytes)
+            if (file.size > 2 * 1024 * 1024) {
+                throw new Error('La imagen es demasiado grande. El tamaño máximo es de 2MB.');
+            }
+            
+            const formData = new FormData();
+            formData.append('image', file);
+
+            const response = await fetch('/api/chat/upload-image/', {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error('Error al subir la imagen');
+            }
+
+            const data = await response.json();
+            if (!data.success) {
+                throw new Error(data.error || 'Error desconocido al subir la imagen');
+            }
+
+            return data.url;
+        }
+
+        // Send message to backend
+        async function sendToBackend(message, imageUrl) {
+            const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value || 
+                            getCookie('csrftoken');
+
+            if (!csrfToken) {
+                console.error('CSRF token not found');
+                throw new Error('Falta token de seguridad. Por favor recargue la página.');
+            }
+
+            const headers = {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken
+            };
+
+            const response = await fetch('/api/chat/send/', {
+                method: 'POST',
+                headers: headers,
+                body: JSON.stringify({
+                    message: message,
+                    image_url: imageUrl
+                })
+            });
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                console.error('API call failed with status:', response.status, 'and response:', errorText);
+                throw new Error(`Error de red al enviar el mensaje. Código: ${response.status}`);
+            }
+
+            const data = await response.json();
+            if (!data.success) {
+                throw new Error(data.error || 'Error desconocido al enviar el mensaje');
+            }
+
+            return data;
+        }
+
+        // Send message to Telegram
+        async function sendMessageToTelegram() {
+            const message = chatMessageTextarea.value;
+
+            if (!message && !chatImageInput.files[0]) {
+                alert('Por favor escribe un mensaje o selecciona una imagen');
+                return;
+            }
+
+            // Disable send button to prevent multiple sends
+            const sendButton = document.getElementById('sendChatMessage');
+            sendButton.disabled = true;
+            sendButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Enviando...';
+
+            // Add user message to chat (for visual feedback)
+            const messageText = message ? `Tú: ${message}` : 'Tú: [Imagen]';
+            addMessageToChat(messageText, 'mensaje-propio', null, chatImageInput.files[0] ? 'uploading' : null);
+
+            try {
+                let imageUrl = '';
+
+                // If there's an image, upload it to Cloudinary first
+                if (chatImageInput.files[0]) {
+                    imageUrl = await uploadImageToCloudinary(chatImageInput.files[0]);
+                }
+
+                // Send the message to backend (name and email will be fetched from authenticated user)
+                await sendToBackend(message, imageUrl);
+
+                // Clear form
+                chatMessageTextarea.value = '';
+                chatImageInput.value = '';
+                imagePreview.style.display = 'none';
+
+                // Add confirmation message
+                addMessageToChat('Mensaje enviado a Telegram ✓', 'mensaje-sistema');
+                // Refresh chat history to show the new message and any possible admin replies
+                loadChatHistory(); // Immediate refresh instead of delayed
+            } catch (error) {
+                console.error('Error sending message:', error);
+                console.error('Error details:', {
+                    message: error.message,
+                    name: error.name,
+                    stack: error.stack
+                });
+                
+                // Show more detailed error message
+                let errorMessage = 'Error al enviar el mensaje';
+                if (error.message) {
+                    errorMessage += ': ' + error.message;
+                } else if (error.toString) {
+                    errorMessage += ': ' + error.toString();
+                }
+                
+                addMessageToChat(errorMessage, 'mensaje-sistema');
+                // Reload chat to remove any optimistic updates if needed
+                loadChatHistory();
+            } finally {
+                // Re-enable send button
+                sendButton.disabled = false;
+                sendButton.innerHTML = '<i class="fas fa-paper-plane"></i> Enviar';
+            }
+        }
+
+        // Event Listeners
+        if (chatIcon) {
+            chatIcon.addEventListener('click', function() {
+                modalChat.classList.add('mostrar');
+                resetMessageTracker(); // Reset message tracker when modal opens
+                loadChatHistory(); // Load chat history when modal opens
+            });
+        }
+
+        // Handle image selection
+        chatImageInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    previewImg.src = e.target.result;
+                    imagePreview.style.display = 'block';
+                }
+                reader.readAsDataURL(file);
+            }
+        });
+
+        removeImage.addEventListener('click', function() {
+            chatImageInput.value = '';
+            imagePreview.style.display = 'none';
+        });
+
+        // Handle send message
+        sendChatMessageBtn.addEventListener('click', sendMessageToTelegram);
+
+        // Also send on Enter key (with Shift+Enter for new line)
+        chatMessageTextarea.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessageToTelegram();
+            }
+        });
+
+        // Close modal
+        document.querySelectorAll('.cerrar-modal').forEach(button => {
+            button.addEventListener('click', function() {
+                document.querySelectorAll('.modal').forEach(modal => {
+                    modal.classList.remove('mostrar');
+                });
+            });
+        });
+
+        document.querySelectorAll('.modal').forEach(modal => {
+            modal.addEventListener('click', function(e) {
+                if (e.target === this) {
+                    document.querySelectorAll('.modal').forEach(m => {
+                        m.classList.remove('mostrar');
+                    });
+                }
+            });
+        });
+    });
+</script>
+
+<style>
+    .mensaje-chat {
+        padding: 8px 12px;
+        margin-bottom: 10px;
+        border-radius: 8px;
+        max-width: 80%;
+        word-wrap: break-word;
+    }
+    
+    .mensaje-propio {
+        background-color: #d1f0ff;
+        margin-left: auto;
+        text-align: right;
+    }
+    
+    .mensaje-ajeno {
+        background-color: #f1f0ff;
+        margin-right: auto;
+        text-align: left;
+    }
+    
+    .mensaje-sistema {
+        background-color: #e9ecef;
+        text-align: center;
+        font-style: italic;
+        margin: 5px auto;
+        max-width: 100%;
+    }
+    
+    .chat-messages-container {
+        max-height: 400px;
+        overflow-y: auto;
+    }
+    
+    .message-time {
+        font-size: 0.7em;
+        color: #666;
+        text-align: right;
+        margin-top: 5px;
+    }
+</style>

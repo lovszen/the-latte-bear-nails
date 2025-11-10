@@ -4,6 +4,7 @@
 echo "Preparing application for Render deployment..."
 
 # Install dependencies
+pip install --upgrade pip
 pip install -r requirements.txt
 
 # Run migrations (these would be run in the deployment process)

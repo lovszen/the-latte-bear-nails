@@ -68,6 +68,7 @@ INSTALLED_APPS = [
     'django_bootstrap5',
     'cloudinary',
     'cloudinary_storage',
+    'rest_framework',
 
     "allauth.socialaccount.providers.google",
     #"allauth.socialaccount.providers.github",
@@ -75,6 +76,14 @@ INSTALLED_APPS = [
     'core',
     'productos',
 ]
+
+REST_FRAMEWORK = {
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.AllowAny'
+    ],
+    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
+    'PAGE_SIZE': 10
+}
 
 SITE_ID = 1
 
@@ -224,3 +233,7 @@ EMAIL_USE_SSL = config('EMAIL_USE_SSL', default='False').lower() == 'true'
 EMAIL_HOST_USER = config('EMAIL_HOST_USER', default='')  
 EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD', default='')  
 DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default='noreply@thelattenails.com')
+
+TELEGRAM_BOT_TOKEN = "8330314771:AAHBGVUlzNymX-FQfoUB9SdMYIkBfw_FFLk"
+#TELEGRAM_CHAT_ID = "-5048768860" #group id
+TELEGRAM_CHAT_ID = "910473364" #personal id

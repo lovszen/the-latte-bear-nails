@@ -1,0 +1,30 @@
+/* variables.css - Variables globales */
+:root {
+  --color-primary: #ffe4f4;
+  --color-secondary: #522b0b;
+  --color-accent: #ff69b4;
+  --color-danger: #ff4444;
+  --color-background: #FFF0F5;
+  --color-white: #ffffff;
+
+  --font-family: 'Times New Roman', Times, serif;
+  --font-size-xs: 0.75rem;
+  --font-size-sm: 0.875rem;
+  --font-size-base: 1rem;
+  --font-size-lg: 1.25rem;
+  --font-size-xl: 1.5rem;
+  
+  --spacing-xs: 0.5rem;
+  --spacing-sm: 1rem;
+  --spacing-md: 1.5rem;
+  --spacing-lg: 2rem;
+  --spacing-xl: 3rem;
+  
+  --border-radius: 8px;
+  --border-radius-lg: 12px;
+  --border-radius-xl: 15px;
+  
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.08);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.12);
+  --shadow-lg: 0 8px 16px rgba(82, 43, 11, 0.2);
+}

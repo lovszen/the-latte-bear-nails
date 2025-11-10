@@ -1,0 +1,86 @@
+.btn-store {
+  position: absolute;
+  bottom: 8%;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: var(--color-primary);
+  color: var(--color-secondary);
+  border-radius: 25px;
+  padding: var(--spacing-xs) var(--spacing-xl);
+  font-weight: bold;
+  z-index: 10;
+}
+
+.btn-agregar-carrito {
+  background: var(--color-primary);
+  border: 2px solid var(--color-primary);
+  color: var(--color-secondary);
+  padding: var(--spacing-xs) 0;
+  border-radius: var(--border-radius);
+  cursor: pointer;
+  font-weight: bold;
+  font-size: var(--font-size-sm);
+  text-align: center;
+  transition: all 0.2s;
+  margin-top: 4px;
+}
+
+.btn-agregar-carrito:hover {
+  background: #ffd4f0;
+  transform: translateY(-1px);
+  border-color: #ffd4f0;
+}
+
+.btn-agregar-detalle {
+  background: var(--color-primary);
+  border: 2px solid var(--color-primary);
+  color: var(--color-secondary);
+  padding: var(--spacing-sm) var(--spacing-xl);
+  border-radius: var(--border-radius);
+  cursor: pointer;
+  font-weight: bold;
+  transition: all 0.3s;
+  flex: 1;
+}
+
+.btn-eliminar-detalle {
+  background: var(--color-white);
+  border: 2px solid var(--color-danger);
+  color: var(--color-danger);
+  padding: var(--spacing-sm) var(--spacing-xl);
+  border-radius: var(--border-radius);
+  cursor: pointer;
+  font-weight: bold;
+  transition: all 0.3s;
+  flex: 1;
+}
+
+.btn-agregar-detalle:hover {
+  background: #ffd4f0;
+  transform: translateY(-2px);
+}
+
+.btn-eliminar-detalle:hover {
+  background: var(--color-danger);
+  color: var(--color-white);
+  transform: translateY(-2px);
+}
+
+.btn-comprar {
+  background: var(--color-primary);
+  border: 2px solid var(--color-primary);
+  color: var(--color-secondary);
+  padding: var(--spacing-md) var(--spacing-xl);
+  border-radius: var(--border-radius);
+  cursor: pointer;
+  font-weight: bold;
+  font-size: var(--font-size-lg);
+  width: 100%;
+  margin-top: var(--spacing-lg);
+  transition: all 0.3s;
+}
+
+.btn-comprar:hover {
+  background: #ffd4f0;
+  transform: translateY(-2px);
+}

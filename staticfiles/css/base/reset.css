@@ -1,0 +1,29 @@
+* {
+  font-family: var(--font-family);
+}
+
+html, body {
+  height: 100%;
+}
+
+body {
+  background-image: url('../images/interfaz principal.png');
+  background-color: var(--color-background);
+  background-position: center top;
+  background-repeat: no-repeat;
+  background-size: cover;
+  background-attachment: fixed;
+}
+
+body .container-fluid, body .container {
+  padding-left: 0;
+  padding-right: 0;
+}
+
+main {
+  padding: 0;
+  margin: 0;
+  min-height: calc(100vh - 180px);
+  width: 100%;
+  box-sizing: border-box;
+}

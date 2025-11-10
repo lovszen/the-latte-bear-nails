@@ -1,0 +1,782 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Chat - The Latte Bear Nails{% endblock %}
+
+{% block content %}
+<div class="chat-container-full">
+    <div class="chat-header">
+        <div class="chat-header-content">
+            <div class="chat-branding">
+                <div class="agent-avatar">
+                    <i class="fas fa-headset"></i>
+                </div>
+                <div class="agent-info">
+                    <h3>Soporte en línea</h3>
+                </div>
+            </div>
+            <div class="agent-status">
+                <span class="status-indicator online"></span>
+                <span class="status-text">Disponible</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="chat-main">
+        <div id="chatMessages" class="chat-messages-container">
+            <!-- Mensajes aparecerán aquí -->
+            <div class="mensaje-chat mensaje-sistema welcome-message">
+                <div class="message-content">
+                    <i class="fas fa-robot"></i>
+                    <div class="message-text">
+                        ¡Hola! 👋 Gracias por contactar con el soporte de <strong>The Latte Bear Nails</strong>.<br>
+                        Estamos aquí para ayudarte con cualquier consulta.
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="chat-input-container">
+            <div class="chat-image-preview" id="imagePreview">
+                <div class="preview-content">
+                    <img id="previewImg" src="" alt="Vista previa">
+                    <button type="button" id="removeImage" class="remove-image-btn" title="Eliminar imagen">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div class="chat-message-input">
+                <textarea id="chatMessage" placeholder="Escribe tu mensaje aquí..." class="form-control"></textarea>
+                <div class="message-input-actions">
+                    <label for="chatImage" class="attach-file-btn" title="Adjuntar imagen">
+                        <i class="fas fa-paperclip"></i>
+                    </label>
+                    <input type="file" id="chatImage" accept="image/*">
+                    <button type="button" id="sendChatMessage" class="send-message-btn" title="Enviar mensaje">
+                        <i class="fas fa-paper-plane"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Function to get CSRF token from cookie
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                // Does this cookie string begin with the name we want?
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        const chatImageInput = document.getElementById('chatImage');
+        const imagePreview = document.getElementById('imagePreview');
+        const previewImg = document.getElementById('previewImg');
+        const removeImage = document.getElementById('removeImage');
+        const sendChatMessageBtn = document.getElementById('sendChatMessage');
+        const chatMessageTextarea = document.getElementById('chatMessage');
+
+        // Function to add message to chat
+        function addMessageToChat(text, className, timestamp = null, imageUrl = null) {
+            const chatMessages = document.getElementById('chatMessages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `mensaje-chat ${className}`;
+
+            let contentHTML = '';
+            
+            // Add text if present
+            if (text && text.trim() !== '') {
+                contentHTML += `<div class="message-text">${text}</div>`;
+            }
+            
+            // Add image if present
+            if (imageUrl) {
+                contentHTML += `<div class="message-image"><img src="${imageUrl}" alt="Imagen del mensaje" style="max-width: 200px; border-radius: var(--border-radius); margin-top: var(--spacing-xs);"></div>`;
+            }
+
+            // Add timestamp if provided
+            if (timestamp) {
+                const date = new Date(timestamp);
+                const timeString = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                messageDiv.innerHTML = `
+                    <div class="message-content">
+                        ${contentHTML}
+                        <div class="message-meta">
+                            <span class="message-time">${timeString}</span>
+                        </div>
+                    </div>
+                `;
+            } else {
+                messageDiv.innerHTML = `
+                    <div class="message-content">
+                        ${contentHTML}
+                    </div>
+                `;
+            }
+
+            chatMessages.appendChild(messageDiv);
+            // Auto-scroll to the bottom to show latest message
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        // Load chat history from API
+        async function loadChatHistory() {
+            try {
+                const response = await fetch('/api/chat/my-messages/', {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const messages = await response.json();
+
+                // Clear existing messages except the welcome message
+                const chatMessages = document.getElementById('chatMessages');
+                chatMessages.innerHTML = '<div class="mensaje-chat mensaje-sistema"><div class="message-text">¡Hola! 👋 Bienvenido al chat de soporte. Puedes enviarnos un mensaje o imagen y nos pondremos en contacto contigo lo antes posible.</div></div>';
+
+                // Track the latest message timestamp
+                latestMessageTimestamp = null;
+
+                // Add messages to chat
+                messages.forEach(msg => {
+                    // Determine if it's a user or admin message
+                    const isUserMessage = msg.message_type === 'user';
+                    const isOwnMessage = isUserMessage; // Current user's messages
+                    const className = isOwnMessage ? 'mensaje-propio' : 'mensaje-ajeno';
+                    const senderName = isUserMessage ? 'Tú' : 'Admin';
+                    
+                    // Format message text - if no message text, indicate it's an image message
+                    let messageText = '';
+                    if (msg.message) {
+                        messageText = `${senderName}: ${msg.message}`;
+                    } else if (msg.image_url) {
+                        messageText = `${senderName}: [Imagen]`;
+                    } else {
+                        messageText = `${senderName}: [Mensaje]`;
+                    }
+
+                    addMessageToChat(messageText, className, msg.timestamp, msg.image_url);
+                    
+                    // Update the latest timestamp
+                    if (!latestMessageTimestamp || msg.timestamp > latestMessageTimestamp) {
+                        latestMessageTimestamp = msg.timestamp;
+                    }
+                });
+
+                // Scroll to bottom after loading to show latest messages
+                setTimeout(() => {
+                    chatMessages.scrollTop = chatMessages.scrollHeight;
+                }, 100); // Small delay to ensure DOM is updated
+                
+                return messages; // Return for promise chaining
+            } catch (error) {
+                console.error('Error loading chat history:', error);
+                console.error('Error details:', {
+                    message: error.message,
+                    status: error.status,
+                    stack: error.stack
+                });
+                
+                addMessageToChat('Error al cargar el historial de chat: ' + error.message, 'mensaje-sistema');
+                
+                throw error; // Re-throw so caller can handle it
+            }
+        }
+
+        // Upload image to Cloudinary
+        async function uploadImageToCloudinary(file) {
+            // Check file size (2MB = 2 * 1024 * 1024 bytes)
+            if (file.size > 2 * 1024 * 1024) {
+                throw new Error('La imagen es demasiado grande. El tamaño máximo es de 2MB.');
+            }
+            
+            const formData = new FormData();
+            formData.append('image', file);
+
+            // Get CSRF token using the same robust method as loadChatHistory
+            const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value || 
+                            document.querySelector('meta[name=csrf-token]')?.getAttribute('content') ||
+                            getCookie('csrftoken');
+
+            const headers = {};
+            if (csrfToken) {
+                headers['X-CSRFToken'] = csrfToken;
+            }
+
+            const response = await fetch('/api/chat/upload-image/', {
+                method: 'POST',
+                body: formData,
+                headers: headers
+            });
+
+            if (!response.ok) {
+                throw new Error('Error al subir la imagen');
+            }
+
+            const data = await response.json();
+            if (!data.success) {
+                throw new Error(data.error || 'Error desconocido al subir la imagen');
+            }
+
+            return data.url;
+        }
+
+        // Send message to backend
+        async function sendToBackend(message, imageUrl) {
+            // Get CSRF token using the same robust method as loadChatHistory
+            const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value || 
+                            document.querySelector('meta[name=csrf-token]')?.getAttribute('content') ||
+                            getCookie('csrftoken');
+
+            if (!csrfToken) {
+                console.error('CSRF token not found');
+                throw new Error('Falta token de seguridad. Por favor recargue la página.');
+            }
+
+            const headers = {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken
+            };
+
+            const response = await fetch('/api/chat/send/', {
+                method: 'POST',
+                headers: headers,
+                body: JSON.stringify({
+                    message: message,
+                    image_url: imageUrl
+                })
+            });
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                console.error('API call failed with status:', response.status, 'and response:', errorText);
+                throw new Error(`Error de red al enviar el mensaje. Código: ${response.status}`);
+            }
+
+            const data = await response.json();
+            if (!data.success) {
+                throw new Error(data.error || 'Error desconocido al enviar el mensaje');
+            }
+
+            return data; // Return the full response which includes saved_message
+        }
+
+        // Send message to Telegram
+        async function sendMessageToTelegram() {
+            const message = chatMessageTextarea.value;
+
+            if (!message && !chatImageInput.files[0]) {
+                alert('Por favor escribe un mensaje o selecciona una imagen');
+                return;
+            }
+
+            // Disable send button to prevent multiple sends
+            const sendButton = document.getElementById('sendChatMessage');
+            sendButton.disabled = true;
+            sendButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Enviando...';
+
+            try {
+                let imageUrl = '';
+
+                // If there's an image, upload it to Cloudinary first
+                if (chatImageInput.files[0]) {
+                    imageUrl = await uploadImageToCloudinary(chatImageInput.files[0]);
+                }
+
+                // Send the message to backend (name and email will be fetched from authenticated user)
+                const result = await sendToBackend(message, imageUrl);
+
+                // Clear form
+                chatMessageTextarea.value = '';
+                chatImageInput.value = '';
+                imagePreview.style.display = 'none';
+
+                // If the API returned the saved message data, add it directly to the chat
+                if (result && result.saved_message) {
+                    // Add the confirmed message directly from the API response
+                    const savedMsg = result.saved_message;
+                    // It's the user's message, so format accordingly
+                    const messageText = savedMsg.message ? `Tú: ${savedMsg.message}` : 'Tú: [Imagen]';
+                    addMessageToChat(messageText, 'mensaje-propio', savedMsg.timestamp, savedMsg.image_url);
+                    console.log('Added saved message directly to chat:', savedMsg);
+                    
+                    // Update the latest timestamp since we just sent a message
+                    if (!latestMessageTimestamp || savedMsg.timestamp > latestMessageTimestamp) {
+                        latestMessageTimestamp = savedMsg.timestamp;
+                    }
+                } else {
+                    // Fallback: Add a success message and refresh
+                    addMessageToChat('Mensaje enviado ✓', 'mensaje-sistema');
+                    setTimeout(() => {
+                        loadChatHistory();
+                    }, 300);
+                }
+                
+                console.log('Message sent successfully:', result);
+            } catch (error) {
+                console.error('Error sending message:', error);
+                console.error('Error details:', {
+                    message: error.message,
+                    name: error.name,
+                    stack: error.stack
+                });
+                
+                // Show more detailed error message
+                let errorMessage = 'Error al enviar el mensaje';
+                if (error.message) {
+                    errorMessage += ': ' + error.message;
+                } else if (error.toString) {
+                    errorMessage += ': ' + error.toString();
+                }
+                
+                addMessageToChat(errorMessage, 'mensaje-sistema');
+                // Reload chat in case of error
+                loadChatHistory();
+            } finally {
+                // Re-enable send button
+                sendButton.disabled = false;
+                sendButton.innerHTML = '<i class="fas fa-paper-plane"></i> Enviar';
+            }
+        }
+
+        // Handle image selection
+        chatImageInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    previewImg.src = e.target.result;
+                    imagePreview.style.display = 'block';
+                }
+                reader.readAsDataURL(file);
+            }
+        });
+
+        removeImage.addEventListener('click', function() {
+            chatImageInput.value = '';
+            imagePreview.style.display = 'none';
+        });
+
+        // Handle send message
+        sendChatMessageBtn.addEventListener('click', sendMessageToTelegram);
+
+        // Also send on Enter key (with Shift+Enter for new line)
+        chatMessageTextarea.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessageToTelegram();
+            }
+        });
+
+        // Track the latest message timestamp for polling
+        let latestMessageTimestamp = null;
+        
+        // Function to poll for new messages
+        let pollingInterval = null;
+        
+        function startPolling() {
+            // Stop any existing polling
+            stopPolling();
+            
+            // Poll every 3 seconds for new messages
+            pollingInterval = setInterval(async () => {
+                try {
+                    let url = '/api/chat/my-messages/';
+                    if (latestMessageTimestamp) {
+                        // Only fetch messages newer than the latest one we've seen
+                        url += `?since=${encodeURIComponent(latestMessageTimestamp)}`;
+                    }
+                    
+                    const response = await fetch(url, {
+                        method: 'GET',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        }
+                    });
+                    
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    
+                    const newMessages = await response.json();
+                    
+                    if (Array.isArray(newMessages) && newMessages.length > 0) {
+                        // Add new messages to the chat
+                        newMessages.forEach(msg => {
+                            // Track the latest timestamp
+                            if (!latestMessageTimestamp || msg.timestamp > latestMessageTimestamp) {
+                                latestMessageTimestamp = msg.timestamp;
+                            }
+                            
+                            // Determine if it's a user or admin message
+                            const isUserMessage = msg.message_type === 'user';
+                            const isOwnMessage = isUserMessage; // Current user's messages
+                            const className = isOwnMessage ? 'mensaje-propio' : 'mensaje-ajeno';
+                            const senderName = isUserMessage ? 'Tú' : 'Admin';
+                            
+                            // Format message text - if no message text, indicate it's an image message
+                            let messageText = '';
+                            if (msg.message) {
+                                messageText = `${senderName}: ${msg.message}`;
+                            } else if (msg.image_url) {
+                                messageText = `${senderName}: [Imagen]`;
+                            } else {
+                                messageText = `${senderName}: [Mensaje]`;
+                            }
+                            
+                            addMessageToChat(messageText, className, msg.timestamp, msg.image_url);
+                        });
+                    }
+                } catch (error) {
+                    console.error('Error polling for new messages:', error);
+                }
+            }, 3000); // Poll every 3 seconds
+        }
+        
+        function stopPolling() {
+            if (pollingInterval) {
+                clearInterval(pollingInterval);
+                pollingInterval = null;
+            }
+        }
+        
+        // Load chat history when page loads and then start polling
+        loadChatHistory().then(() => {
+            // After initial load, start polling for new messages
+            // Find the latest timestamp from loaded messages
+            const allMessages = document.querySelectorAll('.mensaje-chat');
+            if (allMessages.length > 0) {
+                // Sort messages by timestamp and get the latest
+                // For this simple implementation, we'll just get the timestamp of the last message added
+                // We'll update the timestamp tracking in loadChatHistory
+            }
+            
+            startPolling();
+        }).catch(error => {
+            console.error('Error loading initial chat history:', error);
+            startPolling(); // Still start polling even if initial load failed
+        });
+    });
+</script>
+
+<style>
+    .chat-container-full {
+        max-width: 95%;
+        width: 900px;
+        margin: 20px auto;
+        background-color: var(--color-white);
+        border-radius: var(--border-radius-xl);
+        box-shadow: var(--shadow-lg);
+        height: 85vh;
+        min-height: 550px;
+        max-height: 800px;
+        display: flex;
+        flex-direction: column;
+        font-family: var(--font-family);
+        overflow: hidden;
+        border: 1px solid var(--color-primary);
+    }
+
+    .chat-header {
+        background: linear-gradient(135deg, var(--color-secondary), #3a1f07);
+        color: white;
+        padding: var(--spacing-md) var(--spacing-lg);
+        border-top-left-radius: var(--border-radius-xl);
+        border-top-right-radius: var(--border-radius-xl);
+        height: 70px;
+    }
+    
+    .chat-header-content {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        height: 100%;
+    }
+    
+    .chat-branding {
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-sm);
+    }
+    
+    .agent-avatar {
+        width: 45px;
+        height: 45px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, var(--color-primary), var(--color-accent));
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--color-secondary);
+        font-weight: bold;
+    }
+    
+    .agent-info h3 {
+        margin: 0;
+        font-size: var(--font-size-base);
+        font-weight: 600;
+    }
+    
+    .agent-status {
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-xs);
+        font-size: 0.85em;
+    }
+    
+    .status-indicator {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        display: inline-block;
+    }
+    
+    .status-indicator.online {
+        background-color: #4CAF50;
+    }
+    
+    .status-text {
+        opacity: 0.9;
+    }
+    
+    .chat-actions {
+        display: none; /* Hide minimize and close buttons */
+    }
+
+    .chat-main {
+        display: flex;
+        flex-direction: column;
+        flex: 1;
+        padding: var(--spacing-md);
+        background-color: var(--color-background);
+        min-height: 0; /* Allow flex child to be smaller than content */
+    }
+
+    .mensaje-chat {
+        margin-bottom: var(--spacing-sm);
+        max-width: 85%;
+        font-size: var(--font-size-sm);
+        line-height: 1.4;
+    }
+    
+    .mensaje-chat .message-content {
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .mensaje-chat .message-text {
+        padding: var(--spacing-sm);
+        border-radius: var(--border-radius-lg);
+        word-wrap: break-word;
+        position: relative;
+    }
+
+    .mensaje-propio {
+        align-self: flex-end;
+    }
+
+    .mensaje-propio .message-text {
+        background: linear-gradient(135deg, var(--color-primary), #ffd9e9);
+        color: var(--color-secondary);
+        border-bottom-right-radius: 4px;
+    }
+    
+    .mensaje-ajeno {
+        align-self: flex-start;
+    }
+
+    .mensaje-ajeno .message-text {
+        background: var(--color-white);
+        color: var(--color-secondary);
+        border: 1px solid var(--color-primary);
+        border-bottom-left-radius: 4px;
+    }
+
+    .mensaje-sistema {
+        align-self: center;
+        max-width: 95%;
+        text-align: center;
+    }
+
+    .mensaje-sistema .message-text {
+        background: var(--color-white);
+        color: var(--color-secondary);
+        border: 1px dashed var(--color-accent);
+        border-radius: var(--border-radius);
+        padding: var(--spacing-sm) var(--spacing-lg);
+        font-style: italic;
+        font-size: 0.9em;
+    }
+    
+    .welcome-message .message-content {
+        display: flex;
+        align-items: flex-start;
+        gap: var(--spacing-sm);
+    }
+    
+    .welcome-message .message-text {
+        flex: 1;
+    }
+    
+    .welcome-message i {
+        color: var(--color-accent);
+        font-size: 1.5em;
+        margin-top: 3px;
+    }
+
+    .chat-messages-container {
+        flex: 1;
+        overflow-y: auto;
+        padding: var(--spacing-sm) 0;
+        margin-bottom: var(--spacing-md);
+        display: flex;
+        flex-direction: column;
+        gap: var(--spacing-xs);
+    }
+
+    .message-meta {
+        display: flex;
+        justify-content: flex-end;
+        margin-top: var(--spacing-xs);
+        font-size: 0.7em;
+        color: var(--color-secondary);
+        opacity: 0.7;
+    }
+    
+    .chat-input-container {
+        display: flex;
+        flex-direction: column;
+        gap: var(--spacing-xs);
+    }
+    
+    .chat-image-preview {
+        display: none;
+        margin-bottom: var(--spacing-xs);
+    }
+    
+    .preview-content {
+        position: relative;
+        max-height: 120px;
+        border-radius: var(--border-radius);
+        overflow: hidden;
+        border: 1px solid var(--color-primary);
+    }
+    
+    .preview-content img {
+        width: 100%;
+        height: auto;
+        display: block;
+    }
+    
+    .remove-image-btn {
+        position: absolute;
+        top: 5px;
+        right: 5px;
+        background: var(--color-danger);
+        color: white;
+        border: none;
+        border-radius: 50%;
+        width: 24px;
+        height: 24px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        font-size: 0.8em;
+    }
+    
+    .chat-message-input {
+        position: relative;
+        border: 2px solid var(--color-primary);
+        border-radius: var(--border-radius-lg);
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .chat-message-input textarea {
+        width: 100%;
+        min-height: 60px;
+        max-height: 120px;
+        padding: var(--spacing-sm);
+        padding-top: var(--spacing-md);
+        border: none;
+        resize: none;
+        font-family: var(--font-family);
+        font-size: var(--font-size-sm);
+        color: var(--color-secondary);
+        outline: none;
+        background-color: var(--color-white);
+    }
+    
+    .chat-message-input textarea:focus {
+        outline: none;
+    }
+    
+    .message-input-actions {
+        display: flex;
+        justify-content: space-between;
+        padding: var(--spacing-xs) var(--spacing-sm);
+        background-color: #f8f8f8;
+        border-top: 1px solid var(--color-primary);
+    }
+    
+    #chatImage {
+        display: none; /* Hide the actual file input, we're using the attach button */
+    }
+    
+    .attach-file-btn, .send-message-btn {
+        background: none;
+        border: none;
+        color: var(--color-secondary);
+        cursor: pointer;
+        padding: var(--spacing-xs);
+        border-radius: 4px;
+        font-size: 1.1em;
+        transition: all 0.2s ease;
+    }
+    
+    .attach-file-btn:hover, .send-message-btn:hover {
+        background: var(--color-primary);
+        color: var(--color-secondary);
+    }
+    
+    .attach-file-btn {
+        margin-right: auto;
+    }
+    
+    .send-message-btn {
+        margin-left: auto;
+    }
+    
+    .message-image img {
+        max-width: 200px;
+        border-radius: var(--border-radius);
+        margin-top: var(--spacing-xs);
+        display: block;
+    }
+    
+    .send-message-btn:disabled, .attach-file-btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+</style>
+
+{% csrf_token %}
+{% endblock %}

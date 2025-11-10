@@ -7,6 +7,7 @@ from io import BytesIO
 from django.core.mail import EmailMessage
 from .models import Budget
 import requests
+from django.conf import settings
 from PIL import Image as PILImage
 from io import BytesIO as IO
 
@@ -163,3 +164,46 @@ def send_budget_email(budget, pdf_buffer):
         logger.error(f"Error sending budget email: {e}")
         print(f"Error sending email: {e}")  # For development
         return False
+    
+def enviar_a_telegram(texto):
+    token = settings.TELEGRAM_BOT_TOKEN
+    chat_id = settings.TELEGRAM_CHAT_ID
+    url = f"https://api.telegram.org/bot{token}/sendMessage"
+    payload = {"chat_id": chat_id, "text": texto, "parse_mode": "HTML"}
+    response = requests.post(url, json=payload)
+    return response
+
+
+def enviar_imagen_a_telegram(image_url):
+    """
+    This function sends an image to Telegram by its URL.
+    Note: Telegram API requires either a file_id, an HTTP URL, or a file upload.
+    """
+    token = settings.TELEGRAM_BOT_TOKEN
+    chat_id = settings.TELEGRAM_CHAT_ID
+    url = f"https://api.telegram.org/bot{token}/sendPhoto"
+    
+    payload = {
+        "chat_id": chat_id,
+        "photo": image_url,  # This could be a file_id or an HTTP URL
+        "caption": "Imagen recibida desde el chat web"
+    }
+    
+    response = requests.post(url, json=payload)
+    return response
+
+
+def enviar_imagen_file_a_telegram(file_path):
+    """
+    Send an image file directly to Telegram
+    """
+    token = settings.TELEGRAM_BOT_TOKEN
+    chat_id = settings.TELEGRAM_CHAT_ID
+    url = f"https://api.telegram.org/bot{token}/sendPhoto"
+    
+    with open(file_path, 'rb') as image_file:
+        files = {'photo': image_file}
+        data = {'chat_id': chat_id, 'caption': 'Imagen recibida desde el chat web'}
+        response = requests.post(url, files=files, data=data)
+    
+    return response

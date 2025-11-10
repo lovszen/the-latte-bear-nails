@@ -2,11 +2,11 @@ services:
 - type: web
   name: the-latte-bear-nails
   env: python
-  region: oregon  # or frankfurt for EU
+  region: oregon
   buildCommand: |
+    pip install --upgrade pip
     pip install -r requirements.txt
     python manage.py collectstatic --noinput
-    python manage.py migrate
   startCommand: gunicorn config.wsgi:application
   envVars:
     - key: SECRET_KEY
@@ -14,20 +14,20 @@ services:
     - key: DEBUG
       value: "False"
     - key: EMAIL_HOST_USER
-      sync: false  # This will be entered manually in the Render dashboard
+      sync: false
     - key: EMAIL_HOST_PASSWORD
-      sync: false  # This will be entered manually in the Render dashboard
+      sync: false
     - key: MERCADOPAGO_ACCESS_TOKEN
-      sync: false  # This will be entered manually in the Render dashboard
+      sync: false
     - key: SOCIALACCOUNT_GOOGLE_CLIENT_ID
-      sync: false  # This will be entered manually in the Render dashboard
+      sync: false
     - key: SOCIALACCOUNT_GOOGLE_SECRET
-      sync: false  # This will be entered manually in the Render dashboard
+      sync: false
     - key: DATABASE_URL
       fromDatabase:
         name: the-latte-bear-nails-db
         property: DATABASE_URL
 databases:
 - name: the-latte-bear-nails-db
-  region: oregon  # must match the service region
+  region: oregon
   plan: free
