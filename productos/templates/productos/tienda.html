@@ -158,14 +158,12 @@
 <script>
     window.budgetCreateUrl = '{% url "create_budget_from_cart" %}';
     
-    // Function to get CSRF token from cookie
     function getCookie(name) {
         let cookieValue = null;
         if (document.cookie && document.cookie !== '') {
             const cookies = document.cookie.split(';');
             for (let i = 0; i < cookies.length; i++) {
                 const cookie = cookies[i].trim();
-                // Does this cookie string begin with the name we want?
                 if (cookie.substring(0, name.length + 1) === (name + '=')) {
                     cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
                     break;
@@ -177,9 +175,8 @@
 
     document.addEventListener('DOMContentLoaded', function() {
         const chatIcon = document.querySelector('.icono-chat-user');
-        let displayedMessageIds = new Set(); // Track which messages are already displayed
+        let displayedMessageIds = new Set(); 
 
-        // Load chat history when modal opens
         function loadChatHistory() {
             fetch('/api/chat/list/', {
                 method: 'GET',
@@ -194,13 +191,10 @@
                 return response.json();
             })
             .then(data => {
-                // Check if data is an array or a paginated response object
                 let messages;
                 if (Array.isArray(data)) {
-                    // Direct array response
                     messages = data;
                 } else if (data && typeof data === 'object' && Array.isArray(data.results)) {
-                    // Paginated response - use the results array
                     messages = data.results;
                 } else {
                     console.error('Invalid response format: expected an array or paginated object but got:', data);
@@ -209,20 +203,15 @@
                 }
                 const chatMessages = document.getElementById('chatMessages');
                 
-                // Don't clear messages, just add new ones
                 messages.forEach(msg => {
-                    // Check if this message is already displayed using timestamp as identifier
-                    // (in a real app, we'd use message ID if available)
                     const messageKey = `${msg.timestamp}_${msg.message}`;
                     
                     if (!displayedMessageIds.has(messageKey)) {
-                        // Determine if it's a user or admin message
                         const isUserMessage = msg.message_type === 'user';
-                        const isOwnMessage = isUserMessage; // Current user's messages
+                        const isOwnMessage = isUserMessage;
                         const className = isOwnMessage ? 'mensaje-propio' : 'mensaje-ajeno';
                         const senderName = isUserMessage ? 'Tú' : 'Admin';
                         
-                        // Check if message has text, otherwise it might be image-only
                         let messageText = '';
                         if (msg.message) {
                             messageText = `${senderName}: ${msg.message}`;
@@ -237,7 +226,6 @@
                     }
                 });
                 
-                // Scroll to bottom after loading
                 chatMessages.scrollTop = chatMessages.scrollHeight;
             })
             .catch(error => {
@@ -248,7 +236,6 @@
                     stack: error.stack
                 });
                 
-                // Provide more specific error messages based on the error type
                 if (error.name === 'TypeError' && error.message.includes('forEach')) {
                     addMessageToChat('Error: Formato de datos inválido en la respuesta del servidor', 'mensaje-sistema');
                 } else if (error.message.includes('HTTP error')) {
@@ -259,7 +246,6 @@
             });
         }
         
-        // Function to reset the displayed messages tracker (e.g. when modal opens)
         function resetMessageTracker() {
             displayedMessageIds = new Set();
         }
@@ -267,12 +253,11 @@
         if (chatIcon) {
             chatIcon.addEventListener('click', function() {
                 document.getElementById('modalChat').classList.add('mostrar');
-                resetMessageTracker(); // Reset message tracker when modal opens
-                loadChatHistory(); // Load chat history when modal opens
+                resetMessageTracker();
+                loadChatHistory(); 
             });
         }
         
-        // Handle image selection
         const chatImageInput = document.getElementById('chatImage');
         const imagePreview = document.getElementById('imagePreview');
         const previewImg = document.getElementById('previewImg');
@@ -295,10 +280,8 @@
             imagePreview.style.display = 'none';
         });
         
-        // Handle send message
         document.getElementById('sendChatMessage').addEventListener('click', sendMessageToTelegram);
         
-        // Also send on Enter key (with Shift+Enter for new line)
         document.getElementById('chatMessage').addEventListener('keydown', function(e) {
             if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
@@ -314,35 +297,28 @@
                 return;
             }
             
-            // Disable send button to prevent multiple sends
             const sendButton = document.getElementById('sendChatMessage');
             sendButton.disabled = true;
             sendButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Enviando...';
             
-            // Add user message to chat (for visual feedback)
             const messageText = message ? `Tú: ${message}` : 'Tú: [Imagen]';
             addMessageToChat(messageText, 'mensaje-propio', null, chatImageInput.files[0] ? 'uploading' : null);
             
             try {
                 let imageUrl = '';
                 
-                // If there's an image, upload it to Cloudinary first
                 if (chatImageInput.files[0]) {
                     imageUrl = await uploadImageToCloudinary(chatImageInput.files[0]);
                 }
                 
-                // Send the message to backend (name and email will be fetched from authenticated user)
                 await sendToBackend(message, imageUrl);
                 
-                // Clear form
                 document.getElementById('chatMessage').value = '';
                 chatImageInput.value = '';
                 imagePreview.style.display = 'none';
                 
-                // Add confirmation message
                 addMessageToChat('Mensaje enviado a Telegram ✓', 'mensaje-sistema');
-                // Refresh chat history to show the new message and any possible admin replies
-                loadChatHistory(); // Immediate refresh instead of delayed
+                loadChatHistory();
             } catch (error) {
                 console.error('Error sending message:', error);
                 console.error('Error details:', {
@@ -351,7 +327,6 @@
                     stack: error.stack
                 });
                 
-                // Show more detailed error message
                 let errorMessage = 'Error al enviar el mensaje';
                 if (error.message) {
                     errorMessage += ': ' + error.message;
@@ -360,17 +335,14 @@
                 }
                 
                 addMessageToChat(errorMessage, 'mensaje-sistema');
-                // Reload chat to remove any optimistic updates if needed
                 loadChatHistory();
             } finally {
-                // Re-enable send button
                 sendButton.disabled = false;
                 sendButton.innerHTML = '<i class="fas fa-paper-plane"></i> Enviar';
             }
         }
         
         async function uploadImageToCloudinary(file) {
-            // Check file size (2MB = 2 * 1024 * 1024 bytes)
             if (file.size > 2 * 1024 * 1024) {
                 throw new Error('La imagen es demasiado grande. El tamaño máximo es de 2MB.');
             }
@@ -442,17 +414,14 @@
             
             let contentHTML = '';
             
-            // Add text if present
             if (text && text.trim() !== '') {
                 contentHTML += `<div class="message-text">${text}</div>`;
             }
             
-            // Add image if present
             if (imageUrl) {
                 contentHTML += `<div class="message-image"><img src="${imageUrl}" alt="Imagen del mensaje" style="max-width: 200px; border-radius: 8px; margin-top: 5px;"></div>`;
             }
 
-            // Add timestamp if provided
             if (timestamp) {
                 const date = new Date(timestamp);
                 const timeString = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });

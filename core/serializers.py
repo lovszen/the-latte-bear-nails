@@ -30,8 +30,6 @@ class BudgetTelegramCreateSerializer(serializers.ModelSerializer):
         fields = ['title', 'customer_email', 'customer_name', 'total_amount']
 
     def create(self, validated_data):
-        # The user and customer info will be set in the view
-        # This serializer is now used to create budget without requiring customer data
         return super().create(validated_data)
 
 
@@ -58,7 +56,6 @@ class TelegramChatAdminReplySerializer(serializers.ModelSerializer):
         return value
 
     def create(self, validated_data):
-        # Set the admin user and message type
         request = self.context.get('request')
         if request and hasattr(request, 'user'):
             validated_data['admin_user'] = request.user

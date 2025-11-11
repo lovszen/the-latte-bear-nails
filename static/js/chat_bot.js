@@ -1,4 +1,3 @@
-// CHATBOT SEPARADO - SISTEMA DE ASISTENTE
 class ProductChatBot {
     constructor() {
         this.products = [];

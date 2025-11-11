@@ -11,7 +11,6 @@ class BudgetCreateView(generics.CreateAPIView):
     permission_classes = [IsAuthenticated]
 
     def perform_create(self, serializer):
-        # Use authenticated user's data instead of data from request
         user = self.request.user
         instance = serializer.save(
             user=user,

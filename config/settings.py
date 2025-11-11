@@ -71,7 +71,6 @@ INSTALLED_APPS = [
     'rest_framework',
 
     "allauth.socialaccount.providers.google",
-    #"allauth.socialaccount.providers.github",
 
     'core',
     'productos',
@@ -92,7 +91,7 @@ AUTHENTICATION_BACKENDS = [
     "allauth.account.auth_backends.AuthenticationBackend",
 ]
 
-# Allauth configuration
+# configuracion allauth
 SOCIALACCOUNT_PROVIDERS = {
     'google': {
         'SCOPE': [
@@ -102,15 +101,14 @@ SOCIALACCOUNT_PROVIDERS = {
         'AUTH_PARAMS': {
             'access_type': 'online',
         },
-        'OAUTH_PKCE_ENABLED': True,  # Enable PKCE for enhanced security
+        'OAUTH_PKCE_ENABLED': True,
     }
 }
 
-# Google OAuth settings - these will be configured via environment variables in production
+# Google OAuth 
 SOCIALACCOUNT_GOOGLE_CLIENT_ID = config('SOCIALACCOUNT_GOOGLE_CLIENT_ID', default='')
 SOCIALACCOUNT_GOOGLE_SECRET = config('SOCIALACCOUNT_GOOGLE_SECRET', default='')
 
-# Additional security settings for OAuth
 SOCIALACCOUNT_LOGIN_ON_GET = True
 ACCOUNT_LOGOUT_ON_GET = True
 
@@ -158,13 +156,11 @@ WSGI_APPLICATION = 'config.wsgi.application'
 
 import os
 if os.environ.get('DATABASE_URL'):
-    # Production database (PostgreSQL on Render)
     import dj_database_url
     DATABASES = {
         'default': dj_database_url.parse(os.environ.get('DATABASE_URL'))
     }
 else:
-    # Development database (SQLite)
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.sqlite3',
@@ -173,8 +169,7 @@ else:
     }
 
 
-# Password validation
-# https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators
+# validacion contraseña
 
 AUTH_PASSWORD_VALIDATORS = [
     {
@@ -192,8 +187,7 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 
-# Internationalization
-# https://docs.djangoproject.com/en/5.2/topics/i18n/
+
 
 LANGUAGE_CODE = 'en-us'
 
@@ -203,28 +197,20 @@ USE_I18N = True
 
 USE_TZ = True
 
-
-# Static files (CSS, JavaScript, Images)
-# https://docs.djangoproject.com/en/5.2/howto/static-files/
-
 STATIC_URL = 'static/'
 
 STATICFILES_DIRS = [
     BASE_DIR / "static",
 ]
 
-# Static files for production
+
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 
-# WhiteNoise configuration
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
-# Media files
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
-# Email configuration
-# Use environment variables for email settings
 EMAIL_BACKEND = config('EMAIL_BACKEND', default='django.core.mail.backends.smtp.EmailBackend')
 EMAIL_HOST = config('EMAIL_HOST', default='smtp.gmail.com')
 EMAIL_PORT = int(config('EMAIL_PORT', default='587'))
