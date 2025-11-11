@@ -1,37 +1,59 @@
-# The Latte Bear Nails - Deployment to Render
+# The Latte Bear Nails 🧸💅
 
-This Django application is configured for deployment to Render.
+Marketplace Local de productos de belleza y uñas "press on" con integración de pagos y chat.
 
-## Deployment Steps
+# Funcionalidades Clave
 
-1. Connect your GitHub repository to Render
-2. Render will automatically use the `render.yaml` configuration file to set up your service
+Autenticación Social: Login con Google usando django-allauth.
 
-## Environment Variables Setup
+Integración de Pagos: Checkout Pro con MercadoPago.
 
-The following environment variables need to be set in the Render dashboard (not in this repository):
+Pedidos Personalizados: Lógica de chat con WebSockets (Django Channels).
 
-1. `EMAIL_HOST_USER` - Your email address for sending emails
-2. `EMAIL_HOST_PASSWORD` - Your email password or app-specific password
-3. `MERCADOPAGO_ACCESS_TOKEN` - Your MercadoPago access token
+Generación de Presupuestos: Creación de PDFs y envío por email (ReportLab).
 
-These variables are marked with `sync: false` in the `render.yaml` file, which means they will not be stored in the configuration file but must be manually entered in the Render dashboard.
+# Vistas Principales
 
-## Automatic Environment Variables
+Página de la Tienda 
+![alt text](image.png)
 
-The following variables will be handled automatically:
-- `DATABASE_URL` - Automatically configured with the PostgreSQL database
-- `SECRET_KEY` - Automatically generated
-- `DEBUG` - Set to False for production
+Carrito + proceso de Pago
+![alt text](image-2.png)
+![alt text](image-3.png)
 
-## File Structure
+Chat soporte y chat bot
+![alt text](image-4.png)
+![alt text](image-5.png)
 
-- `render.yaml` - Render service configuration
-- `runtime.txt` - Python version specification
-- `Procfile` - Production start command
 
-## Security Notes
 
-- The `.env` file is in `.gitignore` and will NOT be uploaded to GitHub or Render
-- All sensitive information must be entered directly in the Render dashboard
-- Never commit secrets to the repository
+# Instalación Local
+
+Para correr el proyecto, necesitas Python 3.11+.
+
+Clona el repositorio:
+
+git clone https://github.com/genuxl/the-latte-bear-nails.git
+
+cd the-latte-bear-nails
+
+
+Crea y activa el entorno virtual:
+
+python -m venv venv
+.\venv\Scripts\activate
+
+
+Instala las dependencias:
+
+pip install -r requirements.txt
+python manage.py makemigrations
+python manage.py migrate
+
+correr el server:
+
+python manage.py runserver
+
+chat admin:
+
+http://127.0.0.1:8000/admin_chat/
