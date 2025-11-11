@@ -1,0 +1,224 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Todos los Presupuestos · The Latte Bear Nails{% endblock %}
+
+{% block content %}
+<div class="admin-container">
+    <div class="admin-header">
+        <h1 class="admin-titulo">Todos los Presupuestos</h1>
+        <div class="admin-actions">
+            <a href="{% url 'admin_dashboard' %}" class="btn btn-latte">← Dashboard</a>
+        </div>
+    </div>
+
+    <div class="presupuestos-grid">
+        {% for budget in budgets %}
+        <div class="presupuesto-card">
+            <div class="presupuesto-header">
+                <h3>{{ budget.title }}</h3>
+                <span class="presupuesto-fecha">{{ budget.created_at|date:"d/m/Y" }}</span>
+            </div>
+            
+            <div class="presupuesto-info">
+                <div class="info-item">
+                    <strong>Cliente:</strong> {{ budget.customer_name }}
+                </div>
+                <div class="info-item">
+                    <strong>Email:</strong> {{ budget.customer_email }}
+                </div>
+                <div class="info-item">
+                    <strong>Usuario:</strong> {{ budget.user.username }}
+                </div>
+            </div>
+            
+            <div class="presupuesto-total">
+                <strong>Total: ${{ budget.total_amount }}</strong>
+            </div>
+            
+            <div class="presupuesto-acciones">
+                <a href="{% url 'view_budget' budget.id %}" class="btn btn-rosa btn-sm">
+                    <i class="bi bi-eye"></i> Ver
+                </a>
+                {% if budget.imagen_referencia %}
+                <span class="badge-imagen" title="Tiene imagen de referencia">
+                    <i class="bi bi-image"></i>
+                </span>
+                {% endif %}
+            </div>
+        </div>
+        {% empty %}
+        <div class="empty-state">
+            <p>No hay presupuestos generados</p>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<style>
+.admin-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+    background: linear-gradient(135deg, #F5F5F5 0%, #FAFAFA 100%);
+    min-height: 100vh;
+}
+
+.admin-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+    padding: 25px;
+    background: white;
+    border-radius: 15px;
+    box-shadow: 0 4px 20px rgba(93, 64, 55, 0.08);
+    border: 1px solid #D7CCC8;
+}
+
+.admin-titulo {
+    color: #5D4037;
+    margin: 0;
+    font-size: 1.8rem;
+}
+
+.presupuestos-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+    gap: 25px;
+}
+
+.presupuesto-card {
+    background: white;
+    border-radius: 15px;
+    padding: 25px;
+    box-shadow: 0 4px 20px rgba(93, 64, 55, 0.08);
+    border: 1px solid #D7CCC8;
+    transition: all 0.3s ease;
+}
+
+.presupuesto-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 30px rgba(93, 64, 55, 0.12);
+}
+
+.presupuesto-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 15px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid #D7CCC8;
+}
+
+.presupuesto-header h3 {
+    color: #5D4037;
+    margin: 0;
+    font-size: 1.2rem;
+    flex: 1;
+}
+
+.presupuesto-fecha {
+    color: #8D6E63;
+    font-size: 0.9rem;
+    background: #F5F5F5;
+    padding: 4px 8px;
+    border-radius: 8px;
+}
+
+.presupuesto-info {
+    margin-bottom: 15px;
+}
+
+.info-item {
+    margin-bottom: 8px;
+    color: #5D4037;
+}
+
+.info-item strong {
+    color: #8D6E63;
+}
+
+.presupuesto-total {
+    text-align: center;
+    padding: 15px;
+    background: #F5F5F5;
+    border-radius: 10px;
+    margin-bottom: 15px;
+    color: #5D4037;
+    font-size: 1.1rem;
+}
+
+.presupuesto-acciones {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.btn {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 8px;
+    font-weight: 600;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.btn-sm {
+    padding: 6px 12px;
+    font-size: 0.85rem;
+}
+
+.btn-rosa {
+    background: linear-gradient(135deg, #ffd4f0 0%, #ffc2e9 100%);
+    color: #5D4037;
+}
+
+.btn-rosa:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(255, 212, 240, 0.3);
+}
+
+.btn-latte {
+    background: linear-gradient(135deg, #5D4037 0%, #8D6E63 100%);
+    color: white;
+}
+
+.btn-latte:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(93, 64, 55, 0.3);
+}
+
+.badge-imagen {
+    color: #A1887F;
+    font-size: 1.2rem;
+}
+
+.empty-state {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 60px 20px;
+    color: #8D6E63;
+    background: white;
+    border-radius: 15px;
+    box-shadow: 0 4px 20px rgba(93, 64, 55, 0.08);
+    border: 1px solid #D7CCC8;
+}
+
+@media (max-width: 768px) {
+    .admin-header {
+        flex-direction: column;
+        gap: 15px;
+        text-align: center;
+    }
+    
+    .presupuestos-grid {
+        grid-template-columns: 1fr;
+    }
+}
+</style>
+{% endblock %}

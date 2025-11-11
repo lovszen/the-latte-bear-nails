@@ -160,18 +160,17 @@
                     const isUserMessage = msg.message_type === 'user';
                     const isOwnMessage = isUserMessage; // Current user's messages
                     const className = isOwnMessage ? 'mensaje-propio' : 'mensaje-ajeno';
-                    const senderName = isUserMessage ? 'Tú' : 'Admin';
                     
                     // Format message text - if no message text, indicate it's an image message
                     let messageText = '';
                     if (msg.message) {
-                        messageText = `${senderName}: ${msg.message}`;
+                        messageText = msg.message; // SOLO EL MENSAJE, sin "Tú:" o "Admin:"
                     } else if (msg.image_url) {
-                        messageText = `${senderName}: [Imagen]`;
+                        messageText = ''; // Vacío para imágenes, solo mostrará la imagen
                     } else {
-                        messageText = `${senderName}: [Mensaje]`;
+                        messageText = '[Mensaje]';
                     }
-
+                    
                     addMessageToChat(messageText, className, msg.timestamp, msg.image_url);
                     
                     // Update the latest timestamp
@@ -313,7 +312,7 @@
                     // Add the confirmed message directly from the API response
                     const savedMsg = result.saved_message;
                     // It's the user's message, so format accordingly
-                    const messageText = savedMsg.message ? `Tú: ${savedMsg.message}` : 'Tú: [Imagen]';
+                    const messageText = savedMsg.message ? savedMsg.message : ''; // SOLO EL MENSAJE, sin "Tú:"
                     addMessageToChat(messageText, 'mensaje-propio', savedMsg.timestamp, savedMsg.image_url);
                     console.log('Added saved message directly to chat:', savedMsg);
                     
@@ -429,16 +428,15 @@
                             const isUserMessage = msg.message_type === 'user';
                             const isOwnMessage = isUserMessage; // Current user's messages
                             const className = isOwnMessage ? 'mensaje-propio' : 'mensaje-ajeno';
-                            const senderName = isUserMessage ? 'Tú' : 'Admin';
                             
                             // Format message text - if no message text, indicate it's an image message
                             let messageText = '';
                             if (msg.message) {
-                                messageText = `${senderName}: ${msg.message}`;
+                                messageText = msg.message; 
                             } else if (msg.image_url) {
-                                messageText = `${senderName}: [Imagen]`;
+                                messageText = ''; 
                             } else {
-                                messageText = `${senderName}: [Mensaje]`;
+                                messageText = '[Mensaje]';
                             }
                             
                             addMessageToChat(messageText, className, msg.timestamp, msg.image_url);
@@ -460,14 +458,6 @@
         // Load chat history when page loads and then start polling
         loadChatHistory().then(() => {
             // After initial load, start polling for new messages
-            // Find the latest timestamp from loaded messages
-            const allMessages = document.querySelectorAll('.mensaje-chat');
-            if (allMessages.length > 0) {
-                // Sort messages by timestamp and get the latest
-                // For this simple implementation, we'll just get the timestamp of the last message added
-                // We'll update the timestamp tracking in loadChatHistory
-            }
-            
             startPolling();
         }).catch(error => {
             console.error('Error loading initial chat history:', error);
@@ -478,29 +468,54 @@
 
 <style>
     .chat-container-full {
+        --chat-color-white: #fff;
+        --chat-color-background: #faf8f5; 
+        --chat-color-primary: #7d5a40;
+        --chat-color-secondary: #3e2a1c; 
+        --chat-color-accent: #b88c69; 
+        --chat-color-danger: #a04538; 
+        --chat-border-radius-xl: 16px;
+        --chat-border-radius-lg: 12px;
+        --chat-border-radius: 8px;
+        --chat-shadow-lg: 0 4px 20px rgba(0, 0, 0, 0.08);
+        --chat-font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        --chat-spacing-xs: 6px;
+        --chat-spacing-sm: 10px;
+        --chat-spacing-md: 14px;
+        --chat-spacing-lg: 18px;
+        --chat-font-size-base: 1.1rem;   
+        --chat-font-size-sm: 1rem;      
+        --chat-font-size-large: 1.3rem;  
+
         max-width: 95%;
         width: 900px;
         margin: 20px auto;
-        background-color: var(--color-white);
-        border-radius: var(--border-radius-xl);
-        box-shadow: var(--shadow-lg);
+        background-color: var(--chat-color-white);
+        border-radius: var(--chat-border-radius-xl);
+        box-shadow: var(--chat-shadow-lg);
         height: 85vh;
         min-height: 550px;
         max-height: 800px;
         display: flex;
         flex-direction: column;
-        font-family: var(--font-family);
+        font-family: var(--chat-font-family);
         overflow: hidden;
-        border: 1px solid var(--color-primary);
+        border: 1px solid var(--chat-color-primary);
     }
 
+    .mensaje-propio .message-text,
+    .mensaje-ajeno .message-text,
+    .mensaje-sistema .message-text {
+    font-family: Arial, sans-serif !important;
+    }
+    
     .chat-header {
-        background: linear-gradient(135deg, var(--color-secondary), #3a1f07);
+        background: linear-gradient(135deg, var(--chat-color-secondary), #5c3f2a); 
         color: white;
-        padding: var(--spacing-md) var(--spacing-lg);
-        border-top-left-radius: var(--border-radius-xl);
-        border-top-right-radius: var(--border-radius-xl);
-        height: 70px;
+        padding: var(--chat-spacing-md) var(--chat-spacing-lg);
+        border-top-left-radius: var(--chat-border-radius-xl);
+        border-top-right-radius: var(--chat-border-radius-xl);
+        height: 75px;
     }
     
     .chat-header-content {
@@ -513,32 +528,33 @@
     .chat-branding {
         display: flex;
         align-items: center;
-        gap: var(--spacing-sm);
+        gap: var(--chat-spacing-sm);
     }
     
     .agent-avatar {
         width: 45px;
         height: 45px;
         border-radius: 50%;
-        background: linear-gradient(135deg, var(--color-primary), var(--color-accent));
+        background: linear-gradient(135deg, var(--chat-color-primary), var(--chat-color-accent));
         display: flex;
         align-items: center;
         justify-content: center;
-        color: var(--color-secondary);
+        color: var(--chat-color-secondary);
         font-weight: bold;
+        font-size: 1.2rem;
     }
     
     .agent-info h3 {
         margin: 0;
-        font-size: var(--font-size-base);
+        font-size: var(--chat-font-size-large);
         font-weight: 600;
     }
     
     .agent-status {
         display: flex;
         align-items: center;
-        gap: var(--spacing-xs);
-        font-size: 0.85em;
+        gap: var(--chat-spacing-xs);
+        font-size: var(--chat-font-size-sm);
     }
     
     .status-indicator {
@@ -557,23 +573,23 @@
     }
     
     .chat-actions {
-        display: none; /* Hide minimize and close buttons */
+        display: none;
     }
 
     .chat-main {
         display: flex;
         flex-direction: column;
         flex: 1;
-        padding: var(--spacing-md);
-        background-color: var(--color-background);
-        min-height: 0; /* Allow flex child to be smaller than content */
+        padding: var(--chat-spacing-md);
+        background-color: var(--chat-color-background);
+        min-height: 0;
     }
 
     .mensaje-chat {
-        margin-bottom: var(--spacing-sm);
-        max-width: 85%;
-        font-size: var(--font-size-sm);
-        line-height: 1.4;
+        margin-bottom: var(--chat-spacing-md);
+        max-width: 80%;
+        font-size: var(--chat-font-size-base);
+        line-height: 1.5;
     }
     
     .mensaje-chat .message-content {
@@ -582,10 +598,11 @@
     }
     
     .mensaje-chat .message-text {
-        padding: var(--spacing-sm);
-        border-radius: var(--border-radius-lg);
+        padding: var(--chat-spacing-sm) var(--chat-spacing-md);
+        border-radius: var(--chat-border-radius-lg);
         word-wrap: break-word;
         position: relative;
+        font-size: var(--chat-font-size-base);
     }
 
     .mensaje-propio {
@@ -593,8 +610,8 @@
     }
 
     .mensaje-propio .message-text {
-        background: linear-gradient(135deg, var(--color-primary), #ffd9e9);
-        color: var(--color-secondary);
+        background: linear-gradient(135deg, var(--chat-color-primary), #d1b8a0); 
+        color: var(--chat-color-secondary);
         border-bottom-right-radius: 4px;
     }
     
@@ -603,40 +620,41 @@
     }
 
     .mensaje-ajeno .message-text {
-        background: var(--color-white);
-        color: var(--color-secondary);
-        border: 1px solid var(--color-primary);
+        background: var(--chat-color-white);
+        color: var(--chat-color-secondary);
+        border: 1px solid var(--chat-color-primary);
         border-bottom-left-radius: 4px;
     }
 
     .mensaje-sistema {
         align-self: center;
-        max-width: 95%;
+        max-width: 90%;
         text-align: center;
     }
 
     .mensaje-sistema .message-text {
-        background: var(--color-white);
-        color: var(--color-secondary);
-        border: 1px dashed var(--color-accent);
-        border-radius: var(--border-radius);
-        padding: var(--spacing-sm) var(--spacing-lg);
+        background: var(--chat-color-white);
+        color: var(--chat-color-secondary);
+        border: 1px dashed var(--chat-color-accent);
+        border-radius: var(--chat-border-radius);
+        padding: var(--chat-spacing-sm) var(--chat-spacing-lg);
         font-style: italic;
-        font-size: 0.9em;
+        font-size: var(--chat-font-size-sm);
     }
     
     .welcome-message .message-content {
         display: flex;
         align-items: flex-start;
-        gap: var(--spacing-sm);
+        gap: var(--chat-spacing-sm);
     }
     
     .welcome-message .message-text {
         flex: 1;
+        font-size: var(--chat-font-size-base);
     }
     
     .welcome-message i {
-        color: var(--color-accent);
+        color: var(--chat-color-accent);
         font-size: 1.5em;
         margin-top: 3px;
     }
@@ -644,39 +662,39 @@
     .chat-messages-container {
         flex: 1;
         overflow-y: auto;
-        padding: var(--spacing-sm) 0;
-        margin-bottom: var(--spacing-md);
+        padding: var(--chat-spacing-sm) 0;
+        margin-bottom: var(--chat-spacing-md);
         display: flex;
         flex-direction: column;
-        gap: var(--spacing-xs);
+        gap: var(--chat-spacing-sm);
     }
 
     .message-meta {
         display: flex;
         justify-content: flex-end;
-        margin-top: var(--spacing-xs);
-        font-size: 0.7em;
-        color: var(--color-secondary);
+        margin-top: var(--chat-spacing-xs);
+        font-size: var(--chat-font-size-sm);
+        color: var(--chat-color-secondary);
         opacity: 0.7;
     }
     
     .chat-input-container {
         display: flex;
         flex-direction: column;
-        gap: var(--spacing-xs);
+        gap: var(--chat-spacing-sm);
     }
     
     .chat-image-preview {
         display: none;
-        margin-bottom: var(--spacing-xs);
+        margin-bottom: var(--chat-spacing-xs);
     }
     
     .preview-content {
         position: relative;
         max-height: 120px;
-        border-radius: var(--border-radius);
+        border-radius: var(--chat-border-radius);
         overflow: hidden;
-        border: 1px solid var(--color-primary);
+        border: 1px solid var(--chat-color-primary);
     }
     
     .preview-content img {
@@ -687,42 +705,47 @@
     
     .remove-image-btn {
         position: absolute;
-        top: 5px;
-        right: 5px;
-        background: var(--color-danger);
+        top: 6px;
+        right: 6px;
+        background: var(--chat-color-danger);
         color: white;
         border: none;
         border-radius: 50%;
-        width: 24px;
-        height: 24px;
+        width: 26px;
+        height: 26px;
         display: flex;
         align-items: center;
         justify-content: center;
         cursor: pointer;
-        font-size: 0.8em;
+        font-size: 0.9rem;
     }
     
     .chat-message-input {
         position: relative;
-        border: 2px solid var(--color-primary);
-        border-radius: var(--border-radius-lg);
+        border: 2px solid var(--chat-color-primary);
+        border-radius: var(--chat-border-radius-lg);
         display: flex;
         flex-direction: column;
     }
     
     .chat-message-input textarea {
         width: 100%;
-        min-height: 60px;
+        min-height: 70px;
         max-height: 120px;
-        padding: var(--spacing-sm);
-        padding-top: var(--spacing-md);
+        padding: var(--chat-spacing-md);
         border: none;
         resize: none;
-        font-family: var(--font-family);
-        font-size: var(--font-size-sm);
-        color: var(--color-secondary);
+        font-family: var(--chat-font-family);
+        font-size: var(--chat-font-size-base);
+        color: var(--chat-color-secondary);
         outline: none;
-        background-color: var(--color-white);
+        background-color: var(--chat-color-white);
+        line-height: 1.5;
+    }
+    
+    .chat-message-input textarea::placeholder {
+        color: var(--chat-color-gray);
+        font-size: var(--chat-font-size-base);
     }
     
     .chat-message-input textarea:focus {
@@ -732,29 +755,29 @@
     .message-input-actions {
         display: flex;
         justify-content: space-between;
-        padding: var(--spacing-xs) var(--spacing-sm);
-        background-color: #f8f8f8;
-        border-top: 1px solid var(--color-primary);
+        padding: var(--chat-spacing-sm) var(--chat-spacing-md);
+        background-color: #f0ede9; 
+        border-top: 1px solid var(--chat-color-primary);
     }
     
     #chatImage {
-        display: none; /* Hide the actual file input, we're using the attach button */
+        display: none;
     }
     
     .attach-file-btn, .send-message-btn {
         background: none;
         border: none;
-        color: var(--color-secondary);
+        color: var(--chat-color-secondary);
         cursor: pointer;
-        padding: var(--spacing-xs);
-        border-radius: 4px;
-        font-size: 1.1em;
+        padding: var(--chat-spacing-sm);
+        border-radius: 6px;
+        font-size: 1.2em;
         transition: all 0.2s ease;
     }
     
     .attach-file-btn:hover, .send-message-btn:hover {
-        background: var(--color-primary);
-        color: var(--color-secondary);
+        background: var(--chat-color-primary);
+        color: var(--chat-color-white);
     }
     
     .attach-file-btn {
@@ -766,15 +789,32 @@
     }
     
     .message-image img {
-        max-width: 200px;
-        border-radius: var(--border-radius);
-        margin-top: var(--spacing-xs);
+        max-width: 250px;
+        border-radius: var(--chat-border-radius);
+        margin-top: var(--chat-spacing-sm);
         display: block;
     }
     
     .send-message-btn:disabled, .attach-file-btn:disabled {
         opacity: 0.5;
         cursor: not-allowed;
+    }
+
+    .chat-messages-container::-webkit-scrollbar {
+        width: 6px;
+    }
+    
+    .chat-messages-container::-webkit-scrollbar-track {
+        background: var(--chat-color-background);
+    }
+    
+    .chat-messages-container::-webkit-scrollbar-thumb {
+        background: var(--chat-color-accent);
+        border-radius: 3px;
+    }
+    
+    .chat-messages-container::-webkit-scrollbar-thumb:hover {
+        background: var(--chat-color-primary);
     }
 </style>
 

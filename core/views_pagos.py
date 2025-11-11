@@ -19,7 +19,10 @@ def crear_pago_carrito_js(request):
 def crear_pago_presupuesto(request, budget_id):
     return _handle_mercado_pago(request, budget_id=budget_id)
 
-# ========== HELPERS ==========
+@login_required
+def mp_create_payment(request, budget_id):
+    return _handle_mercado_pago(request, budget_id=budget_id)
+
 def _handle_mercado_pago(request, from_cart=False, budget_id=None):
     if not sdk:
         return JsonResponse({'error': 'Servicio no configurado'}, status=500) if from_cart else redirect('budgets_list')

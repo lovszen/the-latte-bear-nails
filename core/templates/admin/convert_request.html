@@ -1,0 +1,523 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+<div class="admin-container">
+    <div class="admin-header">
+        <h1 class="admin-titulo">Crear Presupuesto desde Solicitud</h1>
+        <div class="admin-actions">
+            <a href="{% url 'admin_solicitudes' %}" class="btn btn-rosa">← Volver a Solicitudes</a>
+        </div>
+    </div>
+
+    <div class="solicitud-info-card">
+        <div class="solicitud-header">
+            <h2>Solicitud #{{ request.id }}</h2>
+            <div class="cliente-info">
+                <p><strong>Cliente:</strong> {{ request.user.get_full_name|default:request.user.username }}</p>
+                <p><strong>Email:</strong> {{ request.user.email }}</p>
+            </div>
+        </div>
+        
+        <div class="solicitud-details-grid">
+            <div class="solicitud-datos">
+                <h3>Especificaciones Originales del Cliente</h3>
+                <div class="detalle-item">
+                    <strong>Forma de uñas:</strong> {{ request.get_forma_display }}
+                </div>
+                <div class="detalle-item">
+                    <strong>Largo deseado:</strong> {{ request.largo }}mm
+                </div>
+                <div class="detalle-item">
+                    <strong>Medidas especiales:</strong> 
+                    {{ request.medidas|default:"No especificadas" }}
+                </div>
+                <div class="detalle-item">
+                    <strong>Fecha de solicitud:</strong> {{ request.created_at|date:"d/m/Y H:i" }}
+                </div>
+            </div>
+            
+            <div class="imagen-section">
+                <h3>Imagen de Referencia del Chat</h3>
+                <div class="imagen-upload">
+                    <label for="imagen_referencia" class="upload-label">
+                        <i class="bi bi-cloud-upload"></i>
+                        <span>Subir imagen que envió el cliente</span>
+                    </label>
+                    <input type="file" id="imagen_referencia" name="imagen_referencia" 
+                           accept="image/*" class="upload-input">
+                    <div class="upload-help">
+                        <small>Imagen que el cliente envió por chat como referencia</small>
+                    </div>
+                </div>
+                
+                <div id="imagenPreview" class="imagen-preview" style="display: none;">
+                    <img id="previewImg" src="" alt="Vista previa">
+                    <button type="button" id="removeImage" class="btn btn-danger btn-sm">×</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="presupuesto-form-card">
+        <h2>Detalles del Presupuesto</h2>
+        <form method="post" id="presupuestoForm" enctype="multipart/form-data">
+            {% csrf_token %}
+            
+            <div class="form-group">
+                <label for="titulo"><strong>Título del Presupuesto:</strong></label>
+                <input type="text" id="titulo" name="title" 
+                       value="Presupuesto para {{ request.user.username }} - {{ request.get_forma_display }}"
+                       class="form-control" required>
+            </div>
+
+            <div class="servicios-section">
+                <h3>Servicios y Especificaciones</h3>
+                <p class="section-description">Agrega cada servicio con su descripción detallada y precio. Incluye modificaciones de color, pedrería, etc.</p>
+                
+                <div id="serviciosContainer">
+                </div>
+                
+                <button type="button" id="agregarServicio" class="btn btn-rosa">
+                    <i class="bi bi-plus-circle"></i> Agregar Servicio
+                </button>
+            </div>
+
+            <div class="resumen-section">
+                <h3>Resumen del Presupuesto</h3>
+                <div class="resumen-details">
+                    <div class="resumen-total">
+                        <strong>Total:</strong>
+                        <strong>$<span id="totalAmount">0.00</span></strong>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-actions">
+                <button type="submit" class="btn btn-latte">
+                    <i class="bi bi-check-circle"></i> Crear Presupuesto
+                </button>
+                <a href="{% url 'admin_solicitudes' %}" class="btn btn-rosa">
+                    <i class="bi bi-x-circle"></i> Cancelar
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<template id="servicioTemplate">
+    <div class="servicio-item">
+        <div class="servicio-header">
+            <h4>Servicio #<span class="servicio-numero">1</span></h4>
+            <button type="button" class="btn btn-danger btn-sm eliminar-servicio">
+                <i class="bi bi-trash"></i>
+            </button>
+        </div>
+        <div class="servicio-row">
+            <div class="servicio-descripcion">
+                <label>Descripción detallada:</label>
+               <textarea name="descripciones" class="form-control descripcion-input" 
+          rows="3" placeholder="Describe el servicio o modificación..." required></textarea>
+            </div>
+        </div>
+        <div class="servicio-precio-row">
+            <div class="servicio-cantidad">
+                <label>Cantidad:</label>
+                <input type="number" name="quantities" class="form-control" 
+                       placeholder="Cantidad" min="1" value="1" required>
+            </div>
+            <div class="servicio-precio">
+                <label>Precio unitario:</label>
+                <input type="number" step="0.01" name="precios" class="form-control precio-input" 
+                       placeholder="0.00" required>
+            </div>
+        </div>
+        <div class="servicio-subtotal">
+            <strong>Subtotal: $<span class="subtotal">0.00</span></strong>
+        </div>
+    </div>
+</template>
+
+<style>
+.admin-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+    background: linear-gradient(135deg, #fff5f5 0%, #fff0f6 100%);
+    min-height: 100vh;
+}
+
+.admin-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+    padding: 20px;
+    background: white;
+    border-radius: 15px;
+    box-shadow: 0 4px 20px rgba(255, 212, 240, 0.15);
+    border: 2px solid #ffd4f0;
+}
+
+.admin-titulo {
+    color: #522b0b;
+    margin: 0;
+    font-size: 1.8rem;
+}
+
+.solicitud-info-card {
+    background: white;
+    border-radius: 15px;
+    padding: 25px;
+    margin-bottom: 30px;
+    box-shadow: 0 4px 20px rgba(255, 212, 240, 0.15);
+    border: 2px solid #ffd4f0;
+}
+
+.solicitud-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 2px solid #ffd4f0;
+}
+
+.cliente-info p {
+    margin: 5px 0;
+    color: #522b0b;
+}
+
+.solicitud-details-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 30px;
+}
+
+.detalle-item {
+    margin-bottom: 12px;
+    padding: 10px;
+    background: #fff5f5;
+    border-radius: 8px;
+    border-left: 4px solid #ffd4f0;
+}
+
+.detalle-item strong {
+    color: #522b0b;
+}
+
+.imagen-section {
+    text-align: center;
+}
+
+.upload-label {
+    display: block;
+    padding: 40px 20px;
+    border: 2px dashed #ffd4f0;
+    border-radius: 10px;
+    background: #fff5f5;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    color: #522b0b;
+}
+
+.upload-label:hover {
+    background: #ffd4f0;
+    border-color: #522b0b;
+}
+
+.upload-input {
+    display: none;
+}
+
+.upload-help {
+    margin-top: 10px;
+    color: #8B4513;
+}
+
+.imagen-preview {
+    margin-top: 20px;
+    position: relative;
+    display: inline-block;
+}
+
+.imagen-preview img {
+    max-width: 300px;
+    max-height: 300px;
+    border-radius: 10px;
+    border: 2px solid #ffd4f0;
+}
+
+#removeImage {
+    position: absolute;
+    top: -10px;
+    right: -10px;
+    border-radius: 50%;
+    width: 30px;
+    height: 30px;
+}
+
+.presupuesto-form-card {
+    background: white;
+    border-radius: 15px;
+    padding: 25px;
+    box-shadow: 0 4px 20px rgba(255, 212, 240, 0.15);
+    border: 2px solid #ffd4f0;
+}
+
+.section-description {
+    color: #8B4513;
+    margin-bottom: 20px;
+    font-style: italic;
+}
+
+.servicio-item {
+    margin-bottom: 25px;
+    padding: 20px;
+    background: #fff5f5;
+    border-radius: 10px;
+    border: 1px solid #ffd4f0;
+}
+
+.servicio-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #ffd4f0;
+}
+
+.servicio-header h4 {
+    color: #522b0b;
+    margin: 0;
+}
+
+.servicio-row {
+    margin-bottom: 15px;
+}
+
+.servicio-precio-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+    align-items: end;
+}
+
+.servicio-row label,
+.servicio-precio-row label {
+    display: block;
+    margin-bottom: 5px;
+    color: #522b0b;
+    font-weight: 500;
+}
+
+.servicio-subtotal {
+    margin-top: 15px;
+    padding-top: 15px;
+    border-top: 1px solid #ffd4f0;
+    text-align: right;
+    color: #522b0b;
+    font-size: 1.1em;
+}
+
+.resumen-section {
+    background: #fff5f5;
+    padding: 25px;
+    border-radius: 10px;
+    margin: 30px 0;
+    border: 1px solid #ffd4f0;
+}
+
+.resumen-details {
+    max-width: 300px;
+    margin: 0 auto;
+}
+
+.resumen-total {
+    display: flex;
+    justify-content: space-between;
+    font-size: 1.3em;
+}
+
+.form-actions {
+    display: flex;
+    gap: 15px;
+    justify-content: flex-end;
+    margin-top: 30px;
+}
+
+.btn {
+    padding: 12px 24px;
+    border: none;
+    border-radius: 8px;
+    font-weight: 600;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.btn-rosa {
+    background: linear-gradient(135deg, #ffd4f0 0%, #ffc2e9 100%);
+    color: #522b0b;
+}
+
+.btn-rosa:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(255, 212, 240, 0.3);
+}
+
+.btn-latte {
+    background: linear-gradient(135deg, #522b0b 0%, #8B4513 100%);
+    color: white;
+}
+
+.btn-latte:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(82, 43, 11, 0.3);
+}
+
+.btn-danger {
+    background: #dc3545;
+    color: white;
+}
+
+.form-control {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ffd4f0;
+    border-radius: 8px;
+    font-size: 1rem;
+    background: white;
+}
+
+.form-control:focus {
+    outline: none;
+    border-color: #522b0b;
+    box-shadow: 0 0 0 2px rgba(82, 43, 11, 0.1);
+}
+
+textarea.form-control {
+    resize: vertical;
+    min-height: 80px;
+}
+
+@media (max-width: 768px) {
+    .solicitud-details-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .solicitud-header {
+        flex-direction: column;
+        gap: 15px;
+    }
+    
+    .servicio-precio-row {
+        grid-template-columns: 1fr;
+    }
+    
+    .form-actions {
+        flex-direction: column;
+    }
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const serviciosContainer = document.getElementById('serviciosContainer');
+    const servicioTemplate = document.getElementById('servicioTemplate');
+    const agregarServicioBtn = document.getElementById('agregarServicio');
+    const totalAmountSpan = document.getElementById('totalAmount');
+    const imagenInput = document.getElementById('imagen_referencia');
+    const imagenPreview = document.getElementById('imagenPreview');
+    const previewImg = document.getElementById('previewImg');
+    const removeImageBtn = document.getElementById('removeImage');
+    
+    let servicioCount = 0;
+    
+    imagenInput.addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                previewImg.src = e.target.result;
+                imagenPreview.style.display = 'block';
+            }
+            reader.readAsDataURL(file);
+        }
+    });
+    
+    removeImageBtn.addEventListener('click', function() {
+        imagenInput.value = '';
+        imagenPreview.style.display = 'none';
+        previewImg.src = '';
+    });
+    
+    agregarServicio();
+    
+    agregarServicioBtn.addEventListener('click', agregarServicio);
+    
+    function agregarServicio() {
+        servicioCount++;
+        const clone = servicioTemplate.content.cloneNode(true);
+        serviciosContainer.appendChild(clone);
+        
+        const nuevoServicio = serviciosContainer.lastElementChild;
+        const numeroServicio = nuevoServicio.querySelector('.servicio-numero');
+        const cantidadInput = nuevoServicio.querySelector('input[name="quantities"]');
+        const precioInput = nuevoServicio.querySelector('.precio-input');
+        const eliminarBtn = nuevoServicio.querySelector('.eliminar-servicio');
+        
+        numeroServicio.textContent = servicioCount;
+        
+        cantidadInput.addEventListener('input', function() {
+            calcularSubtotal(nuevoServicio);
+            calcularTotal();
+        });
+        
+        precioInput.addEventListener('input', function() {
+            calcularSubtotal(nuevoServicio);
+            calcularTotal();
+        });
+        
+        eliminarBtn.addEventListener('click', function() {
+            nuevoServicio.remove();
+            servicioCount--;
+            actualizarNumerosServicios();
+            calcularTotal();
+        });
+        
+        calcularTotal();
+    }
+    
+    function actualizarNumerosServicios() {
+        const servicios = document.querySelectorAll('.servicio-item');
+        servicios.forEach((servicio, index) => {
+            servicio.querySelector('.servicio-numero').textContent = index + 1;
+        });
+        servicioCount = servicios.length;
+    }
+    
+    function calcularSubtotal(servicioElement) {
+        const cantidad = servicioElement.querySelector('input[name="quantities"]').value || 0;
+        const precio = servicioElement.querySelector('.precio-input').value || 0;
+        const subtotal = cantidad * precio;
+        servicioElement.querySelector('.subtotal').textContent = subtotal.toFixed(2);
+    }
+    
+    function calcularTotal() {
+        let total = 0;
+        document.querySelectorAll('.servicio-item').forEach(servicio => {
+            const cantidad = servicio.querySelector('input[name="quantities"]').value || 0;
+            const precio = servicio.querySelector('.precio-input').value || 0;
+            total += cantidad * precio;
+        });
+        
+        totalAmountSpan.textContent = total.toFixed(2);
+    }
+});
+</script>
+{% endblock %}

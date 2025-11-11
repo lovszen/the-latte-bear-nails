@@ -48,7 +48,13 @@
       <div class="navbar-nav">
         <a class="nav-link" href="{% url 'home' %}">Inicio</a>
         <a class="nav-link" href="{% url 'tienda' %}">Tienda</a>
+        <a class="nav-link" href="{% url 'personalizado' %}">Personalizados</a>
         <a class="nav-link" href="{% url 'budgets_list' %}">Mis Presupuestos</a>
+
+         {% if user.is_staff %}
+            <a class="nav-link" href="{% url 'admin_productos' %}"> Productos</a>
+            <a class="nav-link" href="{% url 'admin_solicitudes' %}"> Solicitudes</a>
+            {% endif %}
       </div>
     </div>
   </nav>

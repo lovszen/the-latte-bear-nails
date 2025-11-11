@@ -1,0 +1,566 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+<div class="dashboard-container">
+    <div class="dashboard-header">
+        <h1 class="dashboard-titulo">Gestión de Presupuestos</h1>
+        <p class="dashboard-subtitulo">Administra y gestiona todos los presupuestos del sistema</p>
+    </div>
+
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-icon" style="background: #5D4037;">
+                <i class="bi bi-file-earmark-text"></i>
+            </div>
+            <div class="stat-info">
+                <h3>{{ total_presupuestos }}</h3>
+                <p>Total Presupuestos</p>
+            </div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-icon" style="background: #8D6E63;">
+                <i class="bi bi-clock-history"></i>
+            </div>
+            <div class="stat-info">
+                <h3>{{ presupuestos_30_dias }}</h3>
+                <p>Últimos 30 días</p>
+            </div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-icon" style="background: #A1887F;">
+                <i class="bi bi-currency-dollar"></i>
+            </div>
+            <div class="stat-info">
+                <h3>${{ total_ingresos|default:0 }}</h3>
+                <p>Total Ingresos</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="admin-tools">
+        <h3>🔧 Herramientas de Administración</h3>
+        <div class="tools-grid">
+            <form method="post" action="{% url 'eliminar_presupuestos_masivos' %}" class="tool-card">
+                {% csrf_token %}
+                <div class="tool-icon" style="background: #dc3545;">
+                    <i class="bi bi-trash"></i>
+                </div>
+                <div class="tool-content">
+                    <h4>Eliminar Presupuestos Antiguos</h4>
+                    <p>Elimina automáticamente presupuestos con más de 30 días</p>
+                    <button type="submit" class="btn-tool danger" onclick="return confirm('¿Estás seguro? Esto eliminará {{ presupuestos_antiguos }} presupuestos.')">
+                        Eliminar ({{ presupuestos_antiguos }})
+                    </button>
+                </div>
+            </form>
+
+            <form method="post" action="{% url 'limpiar_presupuestos_prueba' %}" class="tool-card">
+                {% csrf_token %}
+                <div class="tool-icon" style="background: #ffc107;">
+                    <i class="bi bi-brush"></i>
+                </div>
+                <div class="tool-content">
+                    <h4>Limpiar Presupuestos de Prueba</h4>
+                    <p>Elimina presupuestos de testing y usuarios demo</p>
+                    <button type="submit" class="btn-tool warning" onclick="return confirm('¿Eliminar presupuestos de prueba?')">
+                        Limpiar Pruebas
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="presupuestos-section">
+        <div class="section-header">
+            <h3>📋 Todos los Presupuestos</h3>
+            <div class="section-actions">
+                <input type="text" id="searchPresupuestos" placeholder="Buscar presupuestos..." class="search-input">
+            </div>
+        </div>
+
+        <div class="table-container">
+            <table class="admin-table">
+                <thead>
+                    <tr>
+                        <th>
+                            <input type="checkbox" id="selectAll">
+                        </th>
+                        <th>ID</th>
+                        <th>Cliente</th>
+                        <th>Fecha</th>
+                        <th>Total</th>
+                        <th>Estado</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for presupuesto in presupuestos %}
+                    <tr class="presupuesto-row">
+                        <td>
+                            <input type="checkbox" name="presupuesto_ids" value="{{ presupuesto.id }}" class="presupuesto-checkbox">
+                        </td>
+                        <td>#{{ presupuesto.id }}</td>
+                        <td>
+                            <div class="user-info">
+                                <strong>{{ presupuesto.user.get_full_name|default:presupuesto.user.username }}</strong>
+                                <small>{{ presupuesto.user.email }}</small>
+                            </div>
+                        </td>
+                        <td>{{ presupuesto.created_at|date:"d/m/Y H:i" }}</td>
+                        <td>${{ presupuesto.total_amount }}</td>
+                        <td>
+                            <span class="status-badge pendiente">
+                                Activo
+                            </span>
+                        </td>
+                        <td>
+                            <div class="action-buttons">
+                                <a href="{% url 'view_budget' presupuesto.id %}" class="btn-action view" title="Ver">
+                                    <i class="bi bi-eye"></i>
+                                </a>
+                                <a href="{% url 'download_budget' presupuesto.id %}" class="btn-action download" title="Descargar">
+                                    <i class="bi bi-download"></i>
+                                </a>
+                                <form method="post" action="{% url 'admin_delete_budget' presupuesto.id %}" class="delete-form">
+                                {% csrf_token %}
+                                    <button type="submit" class="btn-action delete" title="Eliminar" onclick="return confirm('¿Eliminar presupuesto #{{ presupuesto.id }}?')">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="no-data">
+                            <i class="bi bi-inbox"></i>
+                            <p>No hay presupuestos registrados</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div class="bulk-actions" id="bulkActions" style="display: none;">
+            <div class="bulk-content">
+                <span id="selectedCount">0 presupuestos seleccionados</span>
+                <form method="post" action="{% url 'eliminar_presupuestos_masivos' %}" id="bulkDeleteForm">
+                    {% csrf_token %}
+                    <input type="hidden" name="presupuesto_ids" id="bulkPresupuestoIds">
+                    <button type="submit" class="btn-bulk danger" onclick="return confirm('¿Eliminar los presupuestos seleccionados?')">
+                        <i class="bi bi-trash"></i> Eliminar Seleccionados
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const selectAll = document.getElementById('selectAll');
+    const checkboxes = document.querySelectorAll('.presupuesto-checkbox');
+    const bulkActions = document.getElementById('bulkActions');
+    const selectedCount = document.getElementById('selectedCount');
+    const bulkPresupuestoIds = document.getElementById('bulkPresupuestoIds');
+
+    selectAll.addEventListener('change', function() {
+        checkboxes.forEach(checkbox => {
+            checkbox.checked = selectAll.checked;
+        });
+        updateBulkActions();
+    });
+
+    checkboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', updateBulkActions);
+    });
+
+    function updateBulkActions() {
+        const selected = Array.from(checkboxes).filter(cb => cb.checked);
+        const selectedIds = selected.map(cb => cb.value);
+        
+        if (selected.length > 0) {
+            bulkActions.style.display = 'block';
+            selectedCount.textContent = `${selected.length} presupuestos seleccionados`;
+            bulkPresupuestoIds.value = selectedIds.join(',');
+        } else {
+            bulkActions.style.display = 'none';
+        }
+    }
+
+    const searchInput = document.getElementById('searchPresupuestos');
+    searchInput.addEventListener('input', function(e) {
+        const searchTerm = e.target.value.toLowerCase();
+        const rows = document.querySelectorAll('.presupuesto-row');
+        
+        rows.forEach(row => {
+            const text = row.textContent.toLowerCase();
+            row.style.display = text.includes(searchTerm) ? '' : 'none';
+        });
+    });
+});
+</script>
+
+<style>
+.dashboard-container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 30px 20px;
+    background: linear-gradient(135deg, #F5F5F5 0%, #FAFAFA 100%);
+    min-height: 100vh;
+}
+
+.dashboard-header {
+    text-align: center;
+    margin-bottom: 40px;
+    padding: 30px;
+    background: white;
+    border-radius: 20px;
+    box-shadow: 0 8px 30px rgba(93, 64, 55, 0.08);
+    border: 1px solid #D7CCC8;
+}
+
+.dashboard-titulo {
+    color: #5D4037;
+    margin: 0 0 10px 0;
+    font-size: 2.5rem;
+    font-weight: 300;
+}
+
+.dashboard-subtitulo {
+    color: #8D6E63;
+    font-size: 1.2rem;
+    margin: 0;
+    font-weight: 300;
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 20px;
+    margin-bottom: 40px;
+}
+
+.stat-card {
+    background: white;
+    border-radius: 15px;
+    padding: 25px;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    box-shadow: 0 5px 20px rgba(93, 64, 55, 0.08);
+    border: 1px solid #D7CCC8;
+}
+
+.stat-icon {
+    width: 60px;
+    height: 60px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 1.5rem;
+}
+
+.stat-info h3 {
+    color: #5D4037;
+    font-size: 2rem;
+    margin: 0 0 5px 0;
+    font-weight: 300;
+}
+
+.stat-info p {
+    color: #8D6E63;
+    margin: 0;
+    font-size: 0.9rem;
+}
+
+.admin-tools {
+    margin-bottom: 40px;
+}
+
+.admin-tools h3 {
+    color: #5D4037;
+    margin-bottom: 20px;
+    font-size: 1.5rem;
+}
+
+.tools-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 20px;
+}
+
+.tool-card {
+    background: white;
+    border-radius: 15px;
+    padding: 25px;
+    box-shadow: 0 5px 20px rgba(93, 64, 55, 0.08);
+    border: 1px solid #D7CCC8;
+    transition: all 0.3s ease;
+}
+
+.tool-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 30px rgba(93, 64, 55, 0.12);
+}
+
+.tool-icon {
+    width: 50px;
+    height: 50px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 1.3rem;
+    margin-bottom: 15px;
+}
+
+.tool-content h4 {
+    color: #5D4037;
+    margin: 0 0 10px 0;
+    font-size: 1.2rem;
+}
+
+.tool-content p {
+    color: #8D6E63;
+    margin: 0 0 15px 0;
+    font-size: 0.9rem;
+    line-height: 1.4;
+}
+
+.btn-tool {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 6px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.btn-tool.danger {
+    background: #dc3545;
+    color: white;
+}
+
+.btn-tool.warning {
+    background: #ffc107;
+    color: #212529;
+}
+
+.btn-tool:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+}
+
+.presupuestos-section {
+    background: white;
+    border-radius: 15px;
+    padding: 30px;
+    box-shadow: 0 5px 20px rgba(93, 64, 55, 0.08);
+    border: 1px solid #D7CCC8;
+}
+
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 25px;
+}
+
+.section-header h3 {
+    color: #5D4037;
+    margin: 0;
+    font-size: 1.5rem;
+}
+
+.search-input {
+    padding: 8px 15px;
+    border: 1px solid #D7CCC8;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    width: 250px;
+}
+
+.admin-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+}
+
+.admin-table th,
+.admin-table td {
+    padding: 12px 15px;
+    text-align: left;
+    border-bottom: 1px solid #D7CCC8;
+}
+
+.admin-table th {
+    background: #5D4037;
+    color: white;
+    font-weight: 600;
+    position: sticky;
+    top: 0;
+}
+
+.user-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.user-info strong {
+    color: #5D4037;
+    font-size: 0.9rem;
+}
+
+.user-info small {
+    color: #8D6E63;
+    font-size: 0.8rem;
+}
+
+.status-badge {
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.status-badge.pagado {
+    background: #d4edda;
+    color: #155724;
+}
+
+.status-badge.pendiente {
+    background: #fff3cd;
+    color: #856404;
+}
+
+.status-badge.cancelado {
+    background: #f8d7da;
+    color: #721c24;
+}
+
+.action-buttons {
+    display: flex;
+    gap: 5px;
+}
+
+.btn-action {
+    width: 32px;
+    height: 32px;
+    border: none;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.btn-action.view {
+    background: #17a2b8;
+    color: white;
+}
+
+.btn-action.download {
+    background: #28a745;
+    color: white;
+}
+
+.btn-action.delete {
+    background: #dc3545;
+    color: white;
+}
+
+.btn-action:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 3px 10px rgba(0,0,0,0.2);
+}
+
+.delete-form {
+    display: inline;
+}
+
+.no-data {
+    text-align: center;
+    padding: 40px;
+    color: #8D6E63;
+}
+
+.no-data i {
+    font-size: 3rem;
+    margin-bottom: 15px;
+    display: block;
+}
+
+.bulk-actions {
+    background: #fff3cd;
+    border: 1px solid #ffeaa7;
+    border-radius: 10px;
+    padding: 15px 20px;
+    margin-top: 20px;
+}
+
+.bulk-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.btn-bulk {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 6px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.btn-bulk.danger {
+    background: #dc3545;
+    color: white;
+}
+
+.btn-bulk:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 3px 10px rgba(0,0,0,0.2);
+}
+
+@media (max-width: 768px) {
+    .dashboard-container {
+        padding: 20px 15px;
+    }
+    
+    .section-header {
+        flex-direction: column;
+        gap: 15px;
+        align-items: stretch;
+    }
+    
+    .search-input {
+        width: 100%;
+    }
+    
+    .admin-table {
+        font-size: 0.8rem;
+    }
+    
+    .action-buttons {
+        flex-direction: column;
+    }
+    
+    .bulk-content {
+        flex-direction: column;
+        gap: 10px;
+        text-align: center;
+    }
+}
+</style>
+{% endblock %}

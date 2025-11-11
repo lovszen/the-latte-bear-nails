@@ -1,0 +1,360 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+<div class="dashboard-container">
+    <div class="dashboard-header">
+        <h1 class="dashboard-titulo">Panel de Administración</h1>
+        <p class="dashboard-subtitulo">Resumen general de The Latte Bear Nails</p>
+        
+        {% if presupuestos_totales > 10 %}
+        <div class="cleanup-alert">
+            <div class="alert-content">
+                <i class="bi bi-exclamation-triangle"></i>
+                <div>
+                    <strong>¡Muchos presupuestos de prueba!</strong>
+                    <span>Tienes {{ presupuestos_totales }} presupuestos.</span>
+                </div>
+                <a href="{% url 'admin_gestion_presupuestos' %}" class="btn-cleanup">Gestionar Presupuestos</a>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-icon" style="background: #5D4037;">
+                <i class="bi bi-box-seam"></i>
+            </div>
+            <div class="stat-info">
+                <h3>{{ total_productos }}</h3>
+                <p>Productos en Catálogo</p>
+            </div>
+            <div class="stat-action">
+                <a href="{% url 'admin_productos' %}" class="btn-stat">Gestionar →</a>
+            </div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-icon" style="background: #8D6E63;">
+                <i class="bi bi-clock-history"></i>
+            </div>
+            <div class="stat-info">
+                <h3>{{ solicitudes_pendientes }}</h3>
+                <p>Solicitudes Pendientes</p>
+            </div>
+            <div class="stat-action">
+                <a href="{% url 'admin_solicitudes' %}" class="btn-stat">Revisar →</a>
+            </div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-icon" style="background: #A1887F;">
+                <i class="bi bi-file-earmark-text"></i>
+            </div>
+            <div class="stat-info">
+                <h3>{{ presupuestos_totales }}</h3>
+                <p>Presupuestos Totales</p>
+            </div>
+            <div class="stat-action">
+                <a href="{% url 'admin_gestion_presupuestos' %}" class="btn-stat">Gestionar →</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="quick-actions">
+        <h2>Acciones Rápidas</h2>
+        <div class="actions-grid">
+            <a href="{% url 'admin_agregar_producto' %}" class="action-card">
+                <div class="action-icon" style="background: #5D4037;">
+                    <i class="bi bi-plus-circle"></i>
+                </div>
+                <div class="action-content">
+                    <h4>Agregar Producto</h4>
+                    <p>Crear nuevo producto en el catálogo</p>
+                </div>
+            </a>
+
+            <a href="{% url 'admin_solicitudes' %}" class="action-card">
+                <div class="action-icon" style="background: #8D6E63;">
+                    <i class="bi bi-chat-dots"></i>
+                </div>
+                <div class="action-content">
+                    <h4>Revisar Solicitudes</h4>
+                    <p>Gestionar pedidos personalizados</p>
+                </div>
+            </a>
+
+            <a href="{% url 'admin_chat' %}" class="action-card">
+                <div class="action-icon" style="background: #A1887F;">
+                    <i class="bi bi-chat-left-text"></i>
+                </div>
+                <div class="action-content">
+                    <h4>Chat con Clientes</h4>
+                    <p>Responder consultas y mensajes</p>
+                </div>
+            </a>
+
+            <a href="{% url 'admin_gestion_presupuestos' %}" class="action-card">
+                <div class="action-icon" style="background: #795548;">
+                    <i class="bi bi-trash"></i>
+                </div>
+                <div class="action-content">
+                    <h4>Gestionar Presupuestos</h4>
+                    <p>Ver y eliminar presupuestos</p>
+                </div>
+            </a>
+        </div>
+    </div>
+</div>
+
+<style>
+.dashboard-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 30px 20px;
+    background: linear-gradient(135deg, #F5F5F5 0%, #FAFAFA 100%);
+    min-height: 100vh;
+}
+
+.dashboard-header {
+    text-align: center;
+    margin-bottom: 50px;
+    padding: 30px;
+    background: white;
+    border-radius: 20px;
+    box-shadow: 0 8px 30px rgba(93, 64, 55, 0.08);
+    border: 1px solid #D7CCC8;
+}
+
+.dashboard-titulo {
+    color: #5D4037;
+    margin: 0 0 10px 0;
+    font-size: 2.5rem;
+    font-weight: 300;
+}
+
+.dashboard-subtitulo {
+    color: #8D6E63;
+    font-size: 1.2rem;
+    margin: 0;
+    font-weight: 300;
+}
+
+.cleanup-alert {
+    background: #fff3cd;
+    border: 1px solid #ffeaa7;
+    border-radius: 10px;
+    padding: 15px 20px;
+    margin: 20px 0;
+    max-width: 600px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.alert-content {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.alert-content i {
+    color: #856404;
+    font-size: 1.5rem;
+}
+
+.alert-content div {
+    flex: 1;
+}
+
+.alert-content strong {
+    color: #856404;
+    display: block;
+    margin-bottom: 5px;
+}
+
+.alert-content span {
+    color: #856404;
+    font-size: 0.9rem;
+}
+
+.btn-cleanup {
+    background: #856404;
+    color: white;
+    padding: 8px 16px;
+    border-radius: 6px;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 0.9rem;
+    transition: all 0.3s ease;
+    white-space: nowrap;
+}
+
+.btn-cleanup:hover {
+    background: #6c5203;
+    color: white;
+    text-decoration: none;
+    transform: translateY(-2px);
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 25px;
+    margin-bottom: 50px;
+}
+
+.stat-card {
+    background: white;
+    border-radius: 20px;
+    padding: 30px;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    box-shadow: 0 8px 30px rgba(93, 64, 55, 0.08);
+    border: 1px solid #D7CCC8;
+    transition: all 0.3s ease;
+}
+
+.stat-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 15px 40px rgba(93, 64, 55, 0.12);
+}
+
+.stat-icon {
+    width: 70px;
+    height: 70px;
+    border-radius: 15px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 1.8rem;
+}
+
+.stat-info h3 {
+    color: #5D4037;
+    font-size: 2.5rem;
+    margin: 0 0 5px 0;
+    font-weight: 300;
+}
+
+.stat-info p {
+    color: #8D6E63;
+    margin: 0;
+    font-size: 1rem;
+}
+
+.stat-action {
+    margin-left: auto;
+}
+
+.btn-stat {
+    color: #5D4037;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 0.9rem;
+    transition: color 0.3s ease;
+}
+
+.btn-stat:hover {
+    color: #8D6E63;
+}
+
+/* Quick Actions */
+.quick-actions h2 {
+    color: #5D4037;
+    margin-bottom: 30px;
+    font-size: 1.8rem;
+    font-weight: 300;
+}
+
+.actions-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 20px;
+}
+
+.action-card {
+    background: white;
+    border-radius: 15px;
+    padding: 25px;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    text-decoration: none;
+    box-shadow: 0 5px 20px rgba(93, 64, 55, 0.08);
+    border: 1px solid #D7CCC8;
+    transition: all 0.3s ease;
+}
+
+.action-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 30px rgba(93, 64, 55, 0.12);
+    text-decoration: none;
+}
+
+.action-icon {
+    width: 60px;
+    height: 60px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 1.5rem;
+}
+
+.action-content h4 {
+    color: #5D4037;
+    margin: 0 0 8px 0;
+    font-size: 1.2rem;
+}
+
+.action-content p {
+    color: #8D6E63;
+    margin: 0;
+    font-size: 0.9rem;
+    line-height: 1.4;
+}
+
+@media (max-width: 768px) {
+    .dashboard-container {
+        padding: 20px 15px;
+    }
+    
+    .dashboard-titulo {
+        font-size: 2rem;
+    }
+    
+    .stat-card {
+        flex-direction: column;
+        text-align: center;
+        padding: 25px;
+    }
+    
+    .stat-action {
+        margin-left: 0;
+        margin-top: 15px;
+    }
+    
+    .actions-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .action-card {
+        flex-direction: column;
+        text-align: center;
+        padding: 20px;
+    }
+    
+    .alert-content {
+        flex-direction: column;
+        text-align: center;
+        gap: 10px;
+    }
+}
+</style>
+{% endblock %}

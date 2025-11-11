@@ -110,6 +110,65 @@
         .reply-form button:hover {
             background-color: #1976d2;
         }
+
+        /* Estilos para la info del presupuesto */
+        .presupuesto-info {
+            background: linear-gradient(135deg, #fff5f5 0%, #ffeef0 100%);
+            padding: 15px;
+            border-radius: 10px;
+            border-left: 4px solid #ffd4f0;
+            margin-bottom: 20px;
+            border: 1px solid #ffd4f0;
+        }
+
+        .presupuesto-info h5 {
+            color: #522b0b;
+            margin: 0 0 10px 0;
+            font-size: 1.1rem;
+        }
+
+        .presupuesto-info p {
+            margin: 5px 0;
+            color: #522b0b;
+        }
+
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.85rem;
+        }
+
+        .btn-sm {
+            padding: 6px 12px;
+        }
+
+        .btn-latte {
+            background: linear-gradient(135deg, #522b0b 0%, #8D6E63 100%);
+            color: white;
+        }
+
+        .btn-latte:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(82, 43, 11, 0.3);
+        }
+
+        .budget-badge {
+            background: #ffd4f0;
+            color: #522b0b;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            margin-left: 10px;
+            font-weight: bold;
+        }
     </style>
 </head>
 <body>
@@ -125,7 +184,11 @@
             <h3>Conversaciones</h3>
             {% for email, data in conversations %}
                 <div class="conversation-item" onclick="loadConversation('{{ email }}', '{{ data.sender_name }}', event)">
-                    <strong>{{ data.sender_name }}</strong><br>
+                    <strong>{{ data.sender_name }}</strong>
+                    {% if data.tiene_presupuestos %}
+                    <span class="budget-badge" title="Tiene presupuestos relacionados">📋</span>
+                    {% endif %}
+                    <br>
                     <small>{{ email }}</small>
                 </div>
             {% empty %}
@@ -134,6 +197,11 @@
         </div>
         
         <div class="chat-area">
+            <!-- Sección de información del presupuesto (se mostrará dinámicamente) -->
+            <div id="presupuestoInfo" class="presupuesto-info" style="display: none;">
+                <!-- La información del presupuesto se cargará aquí -->
+            </div>
+            
             <div id="chatMessages" class="chat-messages">
                 <p id="select-conversation">Selecciona una conversación para ver los mensajes</p>
             </div>
@@ -162,18 +230,8 @@
                 item.classList.remove('active');
             });
             
-            // Only try to highlight the clicked element if event is provided and valid
             if (event && event.currentTarget) {
                 event.currentTarget.classList.add('active');
-            } else {
-                // Fallback: find the element by email to highlight it
-                const conversationItems = document.querySelectorAll('.conversation-item');
-                conversationItems.forEach(item => {
-                    const smallElement = item.querySelector('small');
-                    if (smallElement && smallElement.textContent === email) {
-                        item.classList.add('active');
-                    }
-                });
             }
             
             // Enable reply form
@@ -186,10 +244,12 @@
                 .then(messages => {
                     displayMessages(messages);
                     
+                    // Buscar si hay mensajes con presupuestos relacionados
+                    cargarInformacionPresupuestos(messages);
+                    
                     // Track the latest message timestamp
                     latestMessageTimestamp = null;
                     if (messages.length > 0) {
-                        // Find the most recent timestamp
                         messages.forEach(msg => {
                             if (!latestMessageTimestamp || msg.timestamp > latestMessageTimestamp) {
                                 latestMessageTimestamp = msg.timestamp;
@@ -202,9 +262,49 @@
                 })
                 .catch(error => {
                     console.error('Error loading messages:', error);
-                    // Start polling even if initial load failed
                     startPolling();
                 });
+        }
+
+        function cargarInformacionPresupuestos(messages) {
+            const presupuestoInfoDiv = document.getElementById('presupuestoInfo');
+            presupuestoInfoDiv.style.display = 'none';
+            presupuestoInfoDiv.innerHTML = '';
+            
+            // Buscar mensajes que tengan información de presupuesto
+            const mensajesConPresupuesto = messages.filter(msg => 
+                msg.presupuesto_relacionado || 
+                (msg.message && msg.message.includes('presupuesto'))
+            );
+            
+            if (mensajesConPresupuesto.length > 0) {
+                // Tomar el primer mensaje con presupuesto
+                const mensaje = mensajesConPresupuesto[0];
+                
+                if (mensaje.presupuesto_relacionado) {
+                    const presupuesto = mensaje.presupuesto_relacionado;
+                    presupuestoInfoDiv.innerHTML = `
+                        <h5>📋 Presupuesto Relacionado: #${presupuesto.id}</h5>
+                        <p><strong>Cliente:</strong> ${presupuesto.customer_name}</p>
+                        <p><strong>Total:</strong> $${presupuesto.total_amount}</p>
+                        <p><strong>Título:</strong> ${presupuesto.title}</p>
+                        <a href="/budgets/${presupuesto.id}/" target="_blank" class="btn btn-latte btn-sm">
+                            Ver Presupuesto Completo
+                        </a>
+                    `;
+                    presupuestoInfoDiv.style.display = 'block';
+                } else if (mensaje.message && mensaje.message.includes('presupuesto')) {
+                    // Si no hay presupuesto relacionado pero el mensaje menciona "presupuesto"
+                    presupuestoInfoDiv.innerHTML = `
+                        <h5>💬 Conversación sobre presupuesto</h5>
+                        <p>El usuario está consultando sobre un presupuesto. Pídele que comparta el número de presupuesto o envíalo desde el sistema.</p>
+                        <a href="/admin/todos-presupuestos/" target="_blank" class="btn btn-latte btn-sm">
+                            Buscar Presupuestos
+                        </a>
+                    `;
+                    presupuestoInfoDiv.style.display = 'block';
+                }
+            }
         }
 
         function displayMessages(messages) {
@@ -231,20 +331,22 @@
                     contentHTML += `<br><img src="${msg.image_url}" alt="Imagen del mensaje" style="max-width: 200px; border-radius: 8px; margin-top: 5px;">`;
                 }
                 
+                // Mostrar badge si tiene presupuesto relacionado
+                if (msg.presupuesto_relacionado) {
+                    contentHTML += ` <span class="budget-badge" title="Presupuesto #${msg.presupuesto_relacionado.id}">📋</span>`;
+                }
+                
                 contentHTML += `<br><small>${new Date(msg.timestamp).toLocaleString()}</small>`;
                 
                 messageDiv.innerHTML = contentHTML;
-                
                 chatDiv.appendChild(messageDiv);
             });
             
-            // Scroll to bottom after loading to show latest messages
             setTimeout(() => {
                 chatDiv.scrollTop = chatDiv.scrollHeight;
-            }, 100); // Small delay to ensure DOM is updated
+            }, 100);
         }
         
-        // Function to add a single message to the chat (for new messages via polling)
         function addMessageToChat(msg) {
             const chatDiv = document.getElementById('chatMessages');
             
@@ -255,37 +357,35 @@
             
             let contentHTML = `<strong>${sender}:</strong> `;
             
-            // Add message text if available
             if (msg.message) {
                 contentHTML += ` ${msg.message}`;
             } else if (msg.image_url) {
                 contentHTML += ` [Imagen]`;
             }
             
-            // Add image if available
             if (msg.image_url) {
                 contentHTML += `<br><img src="${msg.image_url}" alt="Imagen del mensaje" style="max-width: 200px; border-radius: 8px; margin-top: 5px;">`;
+            }
+            
+            // Mostrar badge si tiene presupuesto relacionado
+            if (msg.presupuesto_relacionado) {
+                contentHTML += ` <span class="budget-badge" title="Presupuesto #${msg.presupuesto_relacionado.id}">📋</span>`;
             }
             
             contentHTML += `<br><small>${new Date(msg.timestamp).toLocaleString()}</small>`;
             
             messageDiv.innerHTML = contentHTML;
-            
             chatDiv.appendChild(messageDiv);
-            // Auto-scroll to bottom to show latest message
             chatDiv.scrollTop = chatDiv.scrollHeight;
             
-            // Update latest timestamp
             if (!latestMessageTimestamp || msg.timestamp > latestMessageTimestamp) {
                 latestMessageTimestamp = msg.timestamp;
             }
         }
 
         function startPolling() {
-            // Stop any existing polling
             stopPolling();
             
-            // Poll every 3 seconds for new messages in the current conversation
             pollingInterval = setInterval(async () => {
                 if (!currentEmail) {
                     stopPolling();
@@ -295,7 +395,6 @@
                 try {
                     let url = `/api/chat/messages/${currentEmail}/`;
                     if (latestMessageTimestamp) {
-                        // Only fetch messages newer than the latest one we've seen
                         url += `?since=${encodeURIComponent(latestMessageTimestamp)}`;
                     }
                     
@@ -313,15 +412,23 @@
                     const newMessages = await response.json();
                     
                     if (Array.isArray(newMessages) && newMessages.length > 0) {
-                        // Add new messages to the chat
                         newMessages.forEach(msg => {
                             addMessageToChat(msg);
                         });
+                        
+                        // Actualizar información de presupuestos si llegan nuevos mensajes
+                        if (newMessages.some(msg => msg.presupuesto_relacionado)) {
+                            fetch(`/api/chat/messages/${currentEmail}/`)
+                                .then(response => response.json())
+                                .then(allMessages => {
+                                    cargarInformacionPresupuestos(allMessages);
+                                });
+                        }
                     }
                 } catch (error) {
                     console.error('Error polling for new messages:', error);
                 }
-            }, 3000); // Poll every 3 seconds
+            }, 3000);
         }
         
         function stopPolling() {
@@ -338,11 +445,9 @@
                 return;
             }
 
-            // Find the original message from this user to link to
             fetch(`/api/chat/messages/${currentEmail}/`)
                 .then(response => response.json())
                 .then(messages => {
-                    // Get the most recent user message as the original
                     const originalMessage = messages.filter(msg => msg.message_type === 'user').pop();
                     
                     if (!originalMessage) {
@@ -350,7 +455,6 @@
                         return;
                     }
 
-                    // Send admin reply
                     fetch('/api/chat/reply/', {
                         method: 'POST',
                         headers: {
@@ -366,8 +470,6 @@
                     .then(data => {
                         if (data.id) {
                             document.getElementById('replyMessage').value = '';
-                            // Don't reload the whole conversation, just add the message and let polling handle it
-                            // In this case, we'll reload to show the reply in context
                             loadConversation(currentEmail, currentSenderName);
                         } else {
                             alert('Error al enviar la respuesta: ' + (data.error || 'Error desconocido'));
@@ -387,7 +489,6 @@
             return document.querySelector('[name=csrfmiddlewaretoken]').value;
         }
         
-        // Stop polling when leaving the page
         window.addEventListener('beforeunload', stopPolling);
         window.addEventListener('pagehide', stopPolling);
     </script>

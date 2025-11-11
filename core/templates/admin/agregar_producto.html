@@ -1,0 +1,224 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-10 mx-auto">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">
+                        <i class="fas fa-plus-circle"></i> Agregar Nuevo Producto - Uñas Personalizadas
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <form method="post" enctype="multipart/form-data" class="needs-validation" novalidate>
+                        {% csrf_token %}
+                        
+                        {% if messages %}
+                            {% for message in messages %}
+                                <div class="alert alert-{% if message.tags == 'error' %}danger{% else %}{{ message.tags }}{% endif %} alert-dismissible fade show" role="alert">
+                                    {{ message }}
+                                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                                </div>
+                            {% endfor %}
+                        {% endif %}
+
+                        <h5 class="mb-3 border-bottom pb-2"> Información Básica</h5>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="nombre" class="form-label">Nombre del Producto *</label>
+                                    <input type="text" class="form-control" id="nombre" name="nombre" required 
+                                           placeholder="Ej: Uñas Almendra French">
+                                    <div class="invalid-feedback">
+                                        Por favor ingresa el nombre del producto.
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="precio" class="form-label">Precio *</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">$</span>
+                                        <input type="number" class="form-control" id="precio" name="precio" 
+                                               step="0.01" min="0" required placeholder="0.00">
+                                    </div>
+                                    <div class="invalid-feedback">
+                                        Por favor ingresa un precio válido.
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="descripcion" class="form-label">Descripción</label>
+                            <textarea class="form-control" id="descripcion" name="descripcion" rows="3" 
+                                      placeholder="Describe el diseño, materiales utilizados, etc..."></textarea>
+                        </div>
+
+                        <h5 class="mb-3 border-bottom pb-2"> Características</h5>
+                        
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="forma" class="form-label">Forma</label>
+                                    <select class="form-select" id="forma" name="forma">
+                                        <option value="almendra" selected>Almendra</option>
+                                        <option value="cuadrada">Cuadrada</option>
+                                        <option value="redonda">Redonda</option>
+                                        <option value="stiletto">Stiletto</option>
+                                        <option value="coffin">Coffin</option>
+                                        <option value="ballerina">Ballerina</option>
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="tamaño" class="form-label">Tamaño</label>
+                                    <select class="form-select" id="tamaño" name="tamaño">
+                                        <option value="xs">Tamaño 1, XS</option>
+                                        <option value="s" selected>Tamaño 2, S</option>
+                                        <option value="m">Tamaño 3, M</option>
+                                        <option value="l">Tamaño 4, L</option>
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="color_principal" class="form-label">Color Principal *</label>
+                                    <select class="form-select" id="color_principal" name="color_principal" required>
+                                        <option value="" selected disabled>Selecciona un color</option>
+                                        <option value="rosa">Rosa</option>
+                                        <option value="rojo">Rojo</option>
+                                        <option value="amarillo">Amarillo</option>
+                                        <option value="negro">Negro</option>
+                                        <option value="plateado">Plateado</option>
+                                        <option value="blanco">Blanco</option>
+                                        <option value="azul">Azul</option>
+                                        <option value="celeste">Celeste</option>
+                                        <option value="naranja">Naranja</option>
+                                        <option value="violeta">Violeta</option>
+                                        <option value="dorado">Dorado</option>
+                                        <option value="verde">Verde</option>
+                                        <option value="transparente">Transparente</option>
+                                    </select>
+                                    <div class="invalid-feedback">
+                                        Por favor selecciona un color principal.
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="color_secundario" class="form-label">Color Secundario (Opcional)</label>
+                                    <select class="form-select" id="color_secundario" name="color_secundario">
+                                        <option value="" selected>Sin color secundario</option>
+                                        <option value="rosa">Rosa</option>
+                                        <option value="rojo">Rojo</option>
+                                        <option value="amarillo">Amarillo</option>
+                                        <option value="negro">Negro</option>
+                                        <option value="plateado">Plateado</option>
+                                        <option value="blanco">Blanco</option>
+                                        <option value="azul">Azul</option>
+                                        <option value="celeste">Celeste</option>
+                                        <option value="naranja">Naranja</option>
+                                        <option value="violeta">Violeta</option>
+                                        <option value="dorado">Dorado</option>
+                                        <option value="verde">Verde</option>
+                                        <option value="transparente">Transparente</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <h5 class="mb-3 border-bottom pb-2"> Imagen del Producto</h5>
+                        <div class="mb-3">
+                            <label for="imagen" class="form-label">Imagen del Diseño</label>
+                            <input type="file" class="form-control" id="imagen" name="imagen" accept="image/*">
+                            <div class="form-text">
+                                Muestra el diseño final de las uñas. Formatos: JPG, PNG, GIF. Tamaño máximo: 5MB.
+                            </div>
+                        </div>
+
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
+                            <a href="{% url 'admin_productos' %}" class="btn btn-secondary me-md-2">
+                                <i class="fas fa-arrow-left"></i> Cancelar
+                            </a>
+                            <button type="submit" class="btn btn-success">
+                                <i class="fas fa-save"></i> Guardar Producto
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.card {
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+    border: none;
+    border-radius: 0.5rem;
+}
+
+.card-header {
+    border-radius: 0.5rem 0.5rem 0 0 !important;
+}
+
+.form-control:focus, .form-select:focus {
+    border-color: rgba(0,0,0,0.1);
+}
+
+.btn {
+    border-radius: 0.375rem;
+}
+
+.border-bottom {
+    border-color: #dee2e6 !important;
+}
+</style>
+
+<script>
+(function () {
+    'use strict'
+    
+    var forms = document.querySelectorAll('.needs-validation')
+    
+    Array.prototype.slice.call(forms).forEach(function (form) {
+        form.addEventListener('submit', function (event) {
+            if (!form.checkValidity()) {
+                event.preventDefault()
+                event.stopPropagation()
+            }
+            
+            form.classList.add('was-validated')
+        }, false)
+    })
+})()
+
+document.getElementById('imagen').addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    if (file) {
+        if (file.size > 5 * 1024 * 1024) {
+            alert('La imagen es demasiado grande. El tamaño máximo es 5MB.');
+            e.target.value = '';
+            return;
+        }
+        
+        if (!file.type.match('image.*')) {
+            alert('Por favor selecciona un archivo de imagen válido.');
+            e.target.value = '';
+            return;
+        }
+    }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,426 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/components/admin.css' %}">
+{% endblock %}
+
+{% block title %}Solicitudes Pendientes · The Latte Bear Nails{% endblock %}
+
+{% block content %}
+<div class="admin-container">
+    <div class="admin-header">
+        <h1 class="admin-titulo">Solicitudes de Clientes</h1>
+        <div class="admin-actions">
+            <a href="{% url 'admin_productos' %}" class="btn btn-latte">Productos</a>
+            <a href="{% url 'admin_dashboard' %}" class="btn btn-rosa">Dashboard</a>
+        </div>
+    </div>
+
+    <div class="solicitudes-section">
+        <h2 class="section-titulo">Solicitudes Pendientes</h2>
+        {% if solicitudes_pendientes %}
+        <div class="solicitudes-grid">
+            {% for solicitud in solicitudes_pendientes %}
+            <div class="solicitud-card">
+                <div class="solicitud-header">
+                    <div class="solicitud-info">
+                        <h3>Solicitud #{{ solicitud.id }}</h3>
+                        <p class="solicitud-cliente">Cliente: {{ solicitud.user.username }}</p>
+                        <p class="solicitud-fecha">Fecha: {{ solicitud.created_at|date:"d/m/Y H:i" }}</p>
+                    </div>
+                    <div class="solicitud-estado pendiente">
+                        Pendiente
+                    </div>
+                </div>
+                
+                <div class="solicitud-detalles">
+                    <div class="detalle-item">
+                        <strong>Forma:</strong> {{ solicitud.get_forma_display }}
+                    </div>
+                    <div class="detalle-item">
+                        <strong>Largo:</strong> {{ solicitud.largo }}mm
+                    </div>
+                    <div class="detalle-item">
+                        <strong>Medidas Especiales:</strong> 
+                        {{ solicitud.medidas|default:"No especificadas" }}
+                    </div>
+                </div>
+                
+                <div class="solicitud-acciones">
+                    <a href="{% url 'convert_request_to_budget' solicitud.id %}" class="btn btn-latte">
+                        Crear Presupuesto
+                    </a>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <p>No hay solicitudes pendientes</p>
+            <p class="text-muted">Todas las solicitudes han sido procesadas</p>
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="solicitudes-section">
+        <h2 class="section-titulo">Solicitudes Cotizadas</h2>
+        {% if solicitudes_cotizadas %}
+        <div class="solicitudes-grid">
+            {% for solicitud in solicitudes_cotizadas %}
+            <div class="solicitud-card cotizada">
+                <div class="solicitud-header">
+                    <div class="solicitud-info">
+                        <h3>Solicitud #{{ solicitud.id }}</h3>
+                        <p class="solicitud-cliente">Cliente: {{ solicitud.user.username }}</p>
+                        <p class="solicitud-fecha">Fecha: {{ solicitud.created_at|date:"d/m/Y H:i" }}</p>
+                    </div>
+                    <div class="solicitud-estado completada">
+                        Cotizada
+                    </div>
+                </div>
+                
+                <div class="solicitud-detalles">
+                    <div class="detalle-item">
+                        <strong>Forma:</strong> {{ solicitud.get_forma_display }}
+                    </div>
+                    <div class="detalle-item">
+                        <strong>Largo:</strong> {{ solicitud.largo }}mm
+                    </div>
+                    <div class="detalle-item">
+                        <strong>Presupuesto:</strong> 
+                        {% if solicitud.related_budget %}
+                            <a href="{% url 'view_budget' solicitud.related_budget.id %}" class="budget-link">
+                                Ver Presupuesto #{{ solicitud.related_budget.id }}
+                            </a>
+                        {% else %}
+                            <span class="text-muted">No asignado</span>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <div class="solicitud-acciones">
+                    {% if solicitud.related_budget %}
+                    <a href="{% url 'view_budget' solicitud.related_budget.id %}" class="btn btn-rosa">
+                        Ver Presupuesto
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <p>No hay solicitudes cotizadas</p>
+            <p class="text-muted">Las solicitudes procesadas aparecerán aquí</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<style>
+.admin-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+    background: linear-gradient(135deg, #fff5f5 0%, #fff0f6 100%);
+    min-height: 100vh;
+}
+
+.admin-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 40px;
+    flex-wrap: wrap;
+    gap: 15px;
+    padding: 25px;
+    background: white;
+    border-radius: 15px;
+    box-shadow: 0 4px 20px rgba(255, 212, 240, 0.2);
+    border: 2px solid #ffd4f0;
+}
+
+.admin-titulo {
+    color: #522b0b;
+    margin: 0;
+    font-size: 2rem;
+    font-weight: bold;
+}
+
+.admin-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.solicitudes-section {
+    margin-bottom: 40px;
+    background: white;
+    border-radius: 15px;
+    padding: 25px;
+    box-shadow: 0 4px 20px rgba(255, 212, 240, 0.15);
+    border: 2px solid #ffd4f0;
+}
+
+.section-titulo {
+    color: #522b0b;
+    margin-bottom: 25px;
+    font-size: 1.5rem;
+    font-weight: bold;
+    border-bottom: 2px solid #ffd4f0;
+    padding-bottom: 10px;
+}
+
+.solicitudes-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+    gap: 25px;
+}
+
+.solicitud-card {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 4px 15px rgba(255, 212, 240, 0.2);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    transition: all 0.3s ease;
+    border: 1px solid #ffd4f0;
+}
+
+.solicitud-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 25px rgba(255, 212, 240, 0.3);
+}
+
+.solicitud-card.cotizada {
+    border-color: #522b0b;
+    background: linear-gradient(135deg, #faf0e6 0%, #f5f0e6 100%);
+}
+
+.solicitud-header {
+    padding: 20px;
+    background: linear-gradient(135deg, #fff5f5 0%, #fff0f6 100%);
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    border-bottom: 2px solid #ffd4f0;
+}
+
+.solicitud-card.cotizada .solicitud-header {
+    background: linear-gradient(135deg, #f5e6d3 0%, #f0e6d3 100%);
+    border-bottom-color: #522b0b;
+}
+
+.solicitud-info h3 {
+    margin: 0 0 8px 0;
+    color: #522b0b;
+    font-size: 1.2em;
+    font-weight: bold;
+}
+
+.solicitud-cliente {
+    margin: 0 0 5px 0;
+    color: #522b0b;
+    font-weight: 500;
+}
+
+.solicitud-fecha {
+    margin: 0;
+    color: #666;
+    font-size: 0.9em;
+}
+
+.solicitud-estado {
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 0.8em;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.solicitud-estado.pendiente {
+    background: #fff0f6;
+    color: #522b0b;
+    border: 1px solid #ffd4f0;
+}
+
+.solicitud-estado.completada {
+    background: #f5e6d3;
+    color: #522b0b;
+    border: 1px solid #d2b48c;
+}
+
+.solicitud-detalles {
+    padding: 20px;
+    flex-grow: 1;
+}
+
+.detalle-item {
+    margin-bottom: 10px;
+    padding: 8px 0;
+    border-bottom: 1px solid #f8f9fa;
+}
+
+.detalle-item:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+}
+
+.detalle-item strong {
+    color: #522b0b;
+    display: inline-block;
+    min-width: 140px;
+}
+
+.budget-link {
+    color: #522b0b;
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.budget-link:hover {
+    color: #8B4513;
+    text-decoration: underline;
+}
+
+.solicitud-acciones {
+    padding: 20px;
+    background: linear-gradient(135deg, #fff5f5 0%, #fff0f6 100%);
+    border-top: 2px solid #ffd4f0;
+}
+
+.solicitud-card.cotizada .solicitud-acciones {
+    background: linear-gradient(135deg, #f5e6d3 0%, #f0e6d3 100%);
+    border-top-color: #522b0b;
+}
+
+.empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: #522b0b;
+}
+
+.empty-state p {
+    font-size: 1.2em;
+    margin-bottom: 10px;
+}
+
+.text-muted {
+    color: #999 !important;
+}
+
+.btn {
+    padding: 12px 20px;
+    border: none;
+    border-radius: 8px;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.9em;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.btn-rosa {
+    background: linear-gradient(135deg, #ffd4f0 0%, #ffc2e9 100%);
+    color: #522b0b;
+    box-shadow: 0 4px 12px rgba(255, 212, 240, 0.3);
+}
+
+.btn-rosa:hover {
+    background: linear-gradient(135deg, #ffc2e9 0%, #ffd4f0 100%);
+    color: #522b0b;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 18px rgba(255, 212, 240, 0.4);
+}
+
+.btn-latte {
+    background: linear-gradient(135deg, #522b0b 0%, #8B4513 100%);
+    color: white;
+    box-shadow: 0 4px 12px rgba(82, 43, 11, 0.3);
+}
+
+.btn-latte:hover {
+    background: linear-gradient(135deg, #8B4513 0%, #522b0b 100%);
+    color: white;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 18px rgba(82, 43, 11, 0.4);
+}
+
+.btn-danger {
+    background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+    color: white;
+    box-shadow: 0 4px 12px rgba(220, 53, 69, 0.3);
+}
+
+.btn-danger:hover {
+    background: linear-gradient(135deg, #c82333 0%, #dc3545 100%);
+    color: white;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 18px rgba(220, 53, 69, 0.4);
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.solicitud-card {
+    animation: fadeInUp 0.5s ease forwards;
+}
+
+.solicitud-card:nth-child(odd) {
+    animation-delay: 0.1s;
+}
+
+.solicitud-card:nth-child(even) {
+    animation-delay: 0.2s;
+}
+
+@media (max-width: 768px) {
+    .admin-header {
+        flex-direction: column;
+        align-items: stretch;
+        text-align: center;
+    }
+    
+    .admin-actions {
+        justify-content: center;
+        flex-wrap: wrap;
+    }
+    
+    .solicitudes-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .solicitud-header {
+        flex-direction: column;
+        gap: 10px;
+    }
+    
+    .solicitud-estado {
+        align-self: flex-start;
+    }
+    
+    .admin-titulo {
+        font-size: 1.6rem;
+    }
+    
+    .section-titulo {
+        font-size: 1.3rem;
+    }
+}
+</style>
+{% endblock %}

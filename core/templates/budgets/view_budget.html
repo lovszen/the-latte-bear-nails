@@ -1,123 +1,374 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="tienda-container">
-    <main>
-        <div class="tienda-header">
-            <h1 class="tienda-titulo">{{ budget.title }}</h1>
-        </div>
-        
-        <div class="d-flex flex-column flex-md-row">
-            <div class="flex-grow-1 me-md-4">
-                <div class="mb-3">
-                    <strong>Cliente:</strong> {{ budget.customer_name }}<br>
-                    <strong>Email:</strong> {{ budget.customer_email }}<br>
-                    <strong>Fecha:</strong> {{ budget.created_at|date:"d/m/Y H:i" }}
-                </div>
-                
-                <h1>Presupuesto: {{ budget.title }}</h1>
+<style>
+.budget-detail-wrapper {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 3rem 2rem;
+    background: linear-gradient(to bottom, #fce4ec 0%, #f8f9fa 100%);
+    min-height: calc(100vh - 200px);
+}
 
-                <h4>Detalle del Presupuesto</h4>
-                <div class="productos-grid">
-                    {% for item in budget.items.all %}
-                    <div class="producto-card">
-                        <div class="producto-info">
-                            <h3 class="producto-nombre">{{ item.product.nombre }}</h3>
-                            <div class="producto-precios">
-                                <div>Precio Unitario: ${{ item.price }}</div>
-                                <div>Cantidad: {{ item.quantity }}</div>
-                                <div>Subtotal: ${{ item.subtotal }}</div>
-                            </div>
-                        </div>
-                    </div>
-                    {% endfor %}
-                </div>
-                
-                <div class="producto-card mt-3">
-                    <div class="producto-info">
-                        <h3 class="producto-nombre"><strong>Total: ${{ budget.total_amount }}</strong></h3>
-                    </div>
-                </div>
+.budget-detail-header {
+    background: white;
+    border-radius: 16px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+}
+
+.budget-title-detail {
+    font-size: 2rem;
+    color: #333;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 2px solid #fce4ec;
+}
+
+.budget-meta {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1.5rem;
+}
+
+.meta-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.meta-label {
+    font-size: 0.9rem;
+    color: #888;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.meta-value {
+    font-size: 1.1rem;
+    color: #333;
+    font-weight: 500;
+}
+
+.budget-detail-layout {
+    display: grid;
+    grid-template-columns: 1fr 400px;
+    gap: 2rem;
+    align-items: start;
+}
+
+.products-section {
+    background: white;
+    border-radius: 16px;
+    padding: 2rem;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+}
+
+.section-title {
+    font-size: 1.5rem;
+    color: #333;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 2px solid #fce4ec;
+}
+
+.product-item {
+    display: grid;
+    grid-template-columns: 100px 1fr auto;
+    gap: 1.5rem;
+    padding: 1.5rem;
+    border-radius: 12px;
+    background: #fafafa;
+    margin-bottom: 1rem;
+    align-items: center;
+}
+
+.product-image-small {
+    width: 100px;
+    height: 100px;
+    object-fit: cover;
+    border-radius: 10px;
+}
+
+.product-details {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.product-name-detail {
+    font-size: 1.1rem;
+    color: #333;
+    font-weight: 600;
+}
+
+.product-price-info {
+    font-size: 0.95rem;
+    color: #666;
+}
+
+.product-subtotal {
+    text-align: right;
+}
+
+.subtotal-label {
+    font-size: 0.85rem;
+    color: #888;
+    display: block;
+    margin-bottom: 0.25rem;
+}
+
+.subtotal-amount {
+    font-size: 1.3rem;
+    color: #d81b60;
+    font-weight: 700;
+}
+
+.summary-section {
+    position: sticky;
+    top: 2rem;
+}
+
+.summary-card {
+    background: white;
+    border-radius: 16px;
+    padding: 2rem;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    margin-bottom: 1.5rem;
+}
+
+.summary-title {
+    font-size: 1.25rem;
+    color: #333;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 2px solid #fce4ec;
+}
+
+.summary-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.75rem 0;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.summary-label {
+    font-size: 0.95rem;
+    color: #666;
+}
+
+.summary-value {
+    font-size: 0.95rem;
+    color: #333;
+    font-weight: 600;
+}
+
+.summary-total {
+    display: flex;
+    justify-content: space-between;
+    padding: 1.5rem 0 0 0;
+    margin-top: 1rem;
+    border-top: 2px solid #fce4ec;
+}
+
+.total-label-big {
+    font-size: 1.2rem;
+    color: #333;
+    font-weight: 600;
+}
+
+.total-amount-big {
+    font-size: 1.8rem;
+    color: #d81b60;
+    font-weight: 700;
+}
+
+.actions-card {
+    background: white;
+    border-radius: 16px;
+    padding: 2rem;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+}
+
+.action-button {
+    width: 100%;
+    padding: 1rem;
+    border-radius: 10px;
+    border: none;
+    font-weight: 600;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+}
+.btn-pay {
+    background: linear-gradient(135deg, #00a8ff 0%, #0097e6 100%);
+    color: white;
+}
+
+.btn-pay:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0, 168, 255, 0.4);
+    color: white;
+}
+
+.btn-edit-detail {
+    background: linear-gradient(135deg, #ffc107 0%, #ff9800 100%);
+    color: white;
+}
+
+.btn-edit-detail:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(255, 193, 7, 0.4);
+    color: white;
+}
+
+.btn-delete-detail {
+    background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+    color: white;
+}
+
+.btn-delete-detail:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(220, 53, 69, 0.4);
+}
+
+.btn-back {
+    background: #6c757d;
+    color: white;
+}
+
+.btn-back:hover {
+    background: #5a6268;
+    color: white;
+}
+
+@media (max-width: 1024px) {
+    .budget-detail-layout {
+        grid-template-columns: 1fr;
+    }
+    
+    .summary-section {
+        position: static;
+    }
+}
+
+@media (max-width: 768px) {
+    .budget-detail-wrapper {
+        padding: 2rem 1rem;
+    }
+    
+    .product-item {
+        grid-template-columns: 1fr;
+        text-align: center;
+    }
+    
+    .product-image-small {
+        margin: 0 auto;
+    }
+    
+    .product-subtotal {
+        text-align: center;
+    }
+}
+</style>
+
+<div class="budget-detail-wrapper">
+<div class="budget-detail-wrapper">
+    <div class="budget-detail-header">
+        <h1 class="budget-title-detail">{{ budget.title }}</h1>
+        <div class="budget-meta">
+            <div class="meta-item">
+                <span class="meta-label">Cliente:</span>
+                <span class="meta-value">{{ budget.customer_name }}</span>
             </div>
+            <div class="meta-item">
+                <span class="meta-label">Email:</span>
+                <span class="meta-value">{{ budget.customer_email }}</span>
+            </div>
+            <div class="meta-item">
+                <span class="meta-label">Fecha:</span>
+                <span class="meta-value">{{ budget.created_at|date:"d/m/Y H:i" }}</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="budget-detail-layout">
+        <div class="products-section">
+            <h2 class="section-title">Detalle del Presupuesto</h2>
             
-            <div class="d-grid gap-2">
-                <a href="{% url 'download_budget' budget.id %}" class="btn btn-primary">Descargar PDF</a>
-                <button id="send-budget-btn" class="btn btn-success" data-budget-id="{{ budget.id }}">Enviar por Email</button>
-                <a href="{% url 'edit_budget' budget.id %}" class="btn btn-warning">Editar Presupuesto</a>
-                <a href="{% url 'delete_budget' budget.id %}" class="btn btn-danger">Eliminar Presupuesto</a>
-                <a href="{% url 'budgets_list' %}" class="btn btn-secondary">Volver a presupuestos</a>
-
-                <hr>
-                <a href="{% url 'mp_create_payment' budget.id %}" class="btn btn-info btn-lg">
-                    <i class="bi bi-wallet-fill"></i> 
-                    Pagar con MercadoPago
+            {% for item in budget.items.all %}
+            <div class="product-item">
+                {% if item.product.imagen %}
+                <img src="{{ item.product.imagen.url }}" alt="{{ item.product.nombre }}" class="product-image-small">
+                {% else %}
+                <div class="product-image-small" style="background: #f0f0f0; display: flex; align-items: center; justify-content: center;">
+                    <span style="color: #999;">Sin imagen</span>
+                </div>
+                {% endif %}
+                <div class="product-details">
+                    <div class="product-name-detail">{{ item.product.nombre }}</div>
+                    <div class="product-price-info">
+                        ${{ item.price|floatformat:2 }} × {{ item.quantity }} unidad{{ item.quantity|pluralize:"es" }}
+                    </div>
+                </div>
+                <div class="product-subtotal">
+                    <span class="subtotal-label">Subtotal</span>
+                    <span class="subtotal-amount">${{ item.price|floatformat:2 }}</span>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        <div class="budget-actions">
+                <a href="{% url 'chat' %}?presupuesto={{ budget.id }}" class="btn btn-rosa">
+        <i class="bi bi-chat-dots"></i> Contactar Soporte sobre este Presupuesto
                 </a>
+        </div>
+
+        <div class="summary-section">
+            <div class="summary-card">
+                <h3 class="summary-title">Resumen de tu Pedido</h3>
+                
+                <div class="summary-row">
+                    <span class="summary-label">Cantidad de productos:</span>
+                    <span class="summary-value">{{ budget.items.count }}</span>
                 </div>
                 
-                <div id="message" class="mt-3" style="display: none;"></div>
+                <div class="summary-total">
+                    <span class="total-label-big">Total a pagar:</span>
+                    <span class="total-amount-big">${{ budget.total_amount|floatformat:2 }}</span>
+                </div>
+            </div>
+
+            <div class="actions-card">
+                <a href="{% url 'crear_pago_presupuesto' budget.id %}" class="action-button btn-pay">
+                    <i class="bi bi-credit-card"></i> Pagar con Mercado Pago
+                </a>
+                
+                <a href="{% url 'edit_budget' budget.id %}" class="action-button btn-edit-detail">
+                    <i class="bi bi-pencil"></i> Editar Presupuesto
+                </a>
+                
+                <form method="post" action="{% url 'delete_budget' budget.id %}" style="display: inline; width: 100%;">
+                    {% csrf_token %}
+                    <button type="submit" class="action-button btn-delete-detail" 
+                            onclick="return confirm('¿Estás seguro de eliminar este presupuesto?')">
+                        <i class="bi bi-trash"></i> Eliminar Presupuesto
+                    </button>
+                </form>
+                
+                <a href="{% url 'budgets_list' %}" class="action-button btn-back">
+                    <i class="bi bi-arrow-left"></i> Volver a Presupuestos
+                </a>
             </div>
         </div>
-    </main>
+    </div>
 </div>
-
-    <!-- Hidden CSRF token for AJAX requests -->
-    {% csrf_token %}
-
-<script>
-    document.getElementById('send-budget-btn').addEventListener('click', function() {
-        const budgetId = this.getAttribute('data-budget-id');
-        
-        const btn = this;
-        const originalText = btn.innerHTML;
-        
-        // Show loading state
-        btn.disabled = true;
-        btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Enviando...';
-
-        const messageDiv = document.getElementById('message');
-        messageDiv.style.display = 'none';
-
-        fetch('{% url "generate_budget" %}', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
-            },
-            body: JSON.stringify({
-                'budget_id': budgetId
-            })
-        })
-        .then(response => {
-            // Check if the response is JSON before parsing
-            const contentType = response.headers.get("content-type");
-            if (contentType && contentType.includes("application/json")) {
-                return response.json();
-            } else {
-                // If not JSON, return an error indicating HTML response
-                return response.text().then(text => {
-                    throw new Error("Server returned HTML instead of JSON: " + text.substring(0, 200) + "...");
-                });
-            }
-        })
-        .then(data => {
-            if (data.message) {
-                messageDiv.innerHTML = '<div class="alert alert-success">' + data.message + '</div>';
-                messageDiv.style.display = 'block';
-            } else if (data.error) {
-                messageDiv.innerHTML = '<div class="alert alert-danger">Error: ' + data.error + '</div>';
-                messageDiv.style.display = 'block';
-            }
-        })
-        .catch(error => {
-            console.error('Error sending budget:', error);
-            messageDiv.innerHTML = '<div class="alert alert-danger">Error de conexión: ' + error.message + '</div>';
-            messageDiv.style.display = 'block';
-        })
-        .finally(() => {
-            // Restore button state
-            btn.disabled = false;
-            btn.innerHTML = originalText;
-        });
-    });
-</script>
 {% endblock %}

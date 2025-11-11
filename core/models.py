@@ -1,5 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import User
+from cloudinary.models import CloudinaryField
 
 class Budget(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='budgets')
@@ -8,6 +9,7 @@ class Budget(models.Model):
     total_amount = models.DecimalField(max_digits=10, decimal_places=2)
     customer_email = models.EmailField()
     customer_name = models.CharField(max_length=200)
+    imagen_referencia = CloudinaryField('imagen_referencia', blank=True, null=True)
 
     def __str__(self):
         return f"{self.title} - {self.customer_name}"
@@ -25,7 +27,36 @@ class BudgetItem(models.Model):
     def __str__(self):
         return f"{self.product.nombre} x{self.quantity}"
 
-from cloudinary.models import CloudinaryField
+class PersonalizedRequest(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='personalized_requests')
+    
+    forma = models.CharField(max_length=50)
+    largo = models.IntegerField()
+    medidas = models.CharField(max_length=50)
+    
+    STATUS_CHOICES = [
+        ('pending', 'Pendiente de Cotización'),
+        ('quoted', 'Presupuestado'),
+        ('rejected', 'Rechazado'),
+    ]
+    status = models.CharField(
+        max_length=10,
+        choices=STATUS_CHOICES,
+        default='pending'
+    )
+    
+    related_budget = models.OneToOneField(
+        'Budget', 
+        on_delete=models.SET_NULL, 
+        null=True, 
+        blank=True,
+        related_name='original_request'
+    )
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Solicitud Personalizada de {self.user.username} - {self.forma} ({self.status})"
 
 class TelegramChatMessage(models.Model):
     MESSAGE_TYPE_CHOICES = [
@@ -36,15 +67,13 @@ class TelegramChatMessage(models.Model):
     sender_name = models.CharField(max_length=100, blank=True)
     sender_email = models.EmailField(blank=True)
     message = models.TextField()
-    image = CloudinaryField('image', blank=True, null=True)  # Store image in Cloudinary
-    image_url = models.URLField(blank=True, null=True)  # URL to image in Cloudinary or other
+    image = CloudinaryField('image', blank=True, null=True)
+    image_url = models.URLField(blank=True, null=True)
     timestamp = models.DateTimeField(auto_now_add=True)
-    telegram_message_id = models.CharField(max_length=100, blank=True)  # ID of message in Telegram
-    replied = models.BooleanField(default=False)  # Whether admin replied in Telegram
+    telegram_message_id = models.CharField(max_length=100, blank=True)
+    replied = models.BooleanField(default=False)
     message_type = models.CharField(max_length=10, choices=MESSAGE_TYPE_CHOICES, default='user')
-    # For admin replies, link to the original user message
     original_message = models.ForeignKey('self', on_delete=models.CASCADE, null=True, blank=True, related_name='admin_replies')
-    # Track which admin user sent the reply
     admin_user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='admin_replies')
 
     def __str__(self):

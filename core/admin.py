@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Budget, BudgetItem, TelegramChatMessage
+from .models import Budget, BudgetItem, TelegramChatMessage, PersonalizedRequest
 
 @admin.register(Budget)
 class BudgetAdmin(admin.ModelAdmin):
@@ -11,6 +11,19 @@ class BudgetAdmin(admin.ModelAdmin):
 class BudgetItemAdmin(admin.ModelAdmin):
     list_display = ['budget', 'product', 'quantity', 'price', 'subtotal']
     list_filter = ['budget']
+
+@admin.register(PersonalizedRequest)
+class PersonalizedRequestAdmin(admin.ModelAdmin):
+    list_display = ['id', 'user', 'forma', 'largo', 'medidas', 'status', 'created_at', 'related_budget']
+    list_filter = ['status', 'forma', 'created_at']
+    search_fields = ['user__username', 'forma', 'medidas']
+    readonly_fields = ['user', 'related_budget']
+    actions = ['mark_as_quoted']
+
+    def mark_as_quoted(self, request, queryset):
+        queryset.update(status='quoted')
+    mark_as_quoted.short_description = "Marcar solicitudes como presupuestadas"
+
 
 @admin.register(TelegramChatMessage)
 class TelegramChatMessageAdmin(admin.ModelAdmin):
