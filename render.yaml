@@ -8,8 +8,7 @@ services:
     pip install -r requirements.txt
     python manage.py collectstatic --noinput
   startCommand: |
-    python manage.py migrate &&
-    gunicorn config.wsgi:application
+    python manage.py migrate && gunicorn config.wsgi:application
   envVars:
     - key: SECRET_KEY
       generateValue: true

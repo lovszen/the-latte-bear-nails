@@ -7,6 +7,11 @@ echo "Preparing application for Render deployment..."
 pip install --upgrade pip
 pip install -r requirements.txt
 
+# Verify Django installation
+python -c "import django; print('Django version:', django.get_version())" || { echo "Django is not installed properly"; exit 1; }
+
+echo "Django installation verified!"
+
 # Run migrations (these would be run in the deployment process)
 echo "Running migrations..."
 python manage.py makemigrations
