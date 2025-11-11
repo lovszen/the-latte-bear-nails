@@ -1,0 +1,84 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-10 mx-auto">
+            <div class="card">
+                <div class="card-header bg-warning text-white">
+                    <h4 class="mb-0">
+                        <i class="fas fa-edit"></i> Editar Producto - {{ producto.nombre }}
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <form method="post" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        
+                        <div class="mb-3">
+                            <label for="nombre" class="form-label">Nombre del Producto</label>
+                            <input type="text" class="form-control" id="nombre" name="nombre" value="{{ producto.nombre }}" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="precio" class="form-label">Precio</label>
+                            <input type="number" class="form-control" id="precio" name="precio" value="{{ producto.precio }}" step="0.01" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="descripcion" class="form-label">Descripción</label>
+                            <textarea class="form-control" id="descripcion" name="descripcion" rows="3">{{ producto.descripcion }}</textarea>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="forma" class="form-label">Forma</label>
+                            <select class="form-select" id="forma" name="forma">
+                                <option value="almendra" {% if producto.forma == 'almendra' %}selected{% endif %}>Almendra</option>
+                                <option value="cuadrada" {% if producto.forma == 'cuadrada' %}selected{% endif %}>Cuadrada</option>
+                                <option value="redonda" {% if producto.forma == 'redonda' %}selected{% endif %}>Redonda</option>
+                                <option value="stiletto" {% if producto.forma == 'stiletto' %}selected{% endif %}>Stiletto</option>
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="tamaño" class="form-label">Tamaño</label>
+                            <select class="form-select" id="tamaño" name="tamaño">
+                                <option value="xs" {% if producto.tamaño == 'xs' %}selected{% endif %}>XS</option>
+                                <option value="s" {% if producto.tamaño == 's' %}selected{% endif %}>S</option>
+                                <option value="m" {% if producto.tamaño == 'm' %}selected{% endif %}>M</option>
+                                <option value="l" {% if producto.tamaño == 'l' %}selected{% endif %}>L</option>
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="color_principal" class="form-label">Color Principal</label>
+                            <select class="form-select" id="color_principal" name="color_principal" required>
+                                <option value="rosa" {% if producto.color_principal == 'rosa' %}selected{% endif %}>Rosa</option>
+                                <option value="rojo" {% if producto.color_principal == 'rojo' %}selected{% endif %}>Rojo</option>
+                                <option value="negro" {% if producto.color_principal == 'negro' %}selected{% endif %}>Negro</option>
+                                <option value="blanco" {% if producto.color_principal == 'blanco' %}selected{% endif %}>Blanco</option>
+                                <option value="azul" {% if producto.color_principal == 'azul' %}selected{% endif %}>Azul</option>
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="imagen" class="form-label">Imagen</label>
+                            {% if producto.imagen %}
+                                <div class="mb-2">
+                                    <img src="{{ producto.imagen.url }}" alt="{{ producto.nombre }}" style="max-height: 200px;" class="img-thumbnail">
+                                </div>
+                            {% endif %}
+                            <input type="file" class="form-control" id="imagen" name="imagen">
+                        </div>
+
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <a href="{% url 'admin_productos' %}" class="btn btn-secondary me-md-2">Cancelar</a>
+                            <button type="submit" class="btn btn-warning">Actualizar Producto</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
