@@ -15,30 +15,43 @@ Lideré el desarrollo frontend y de interfaces en este proyecto colaborativo.
 
 
 Rediseñé todas las interfaces desde cero
+
 Creé una landing page atractiva con autenticación social
+
 Desarrollé la tienda online completa con catálogo y carrito
+
 Implementé el sistema de uñas personalizadas con guías de medidas
+
 Mejoré la interfaz del chat existente
 
 # Sistema de Administración
 
 
 Desarrollé un panel administrativo exclusivo con permisos
+
 Implementé un gestor completo de productos
+
 Creé un sistema de cotizaciones manuales para personalizados
+
 Diseñé un dashboard con métricas y accesos rápidos
 
 # Extras
 
+
 Integré Cloudinary para gestión de imágenes
+
 Desarrollé un chat bot básico con interfaz personalizada
+
 Contribuí en la gestión de presupuestos del panel admin
 
 # Funcionalidades Clave
 
 Autenticación Social: Login con Google usando django-allauth.
+
 Integración de Pagos: Checkout Pro con MercadoPago.
+
 Pedidos Personalizados: Lógica de chat con WebSockets (Django Channels).
+
 Generación de Presupuestos: Creación de PDFs y envío por email (ReportLab).
 
 # Vistas Principales
