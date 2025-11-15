@@ -15,7 +15,7 @@
                 <a href="{% url 'chat' %}" class="icono-chat-user" title="Chat con nosotros">
                     <i class="fas fa-comment-dots"></i>
                 </a>
-                <div class="icono-chat-bot" title="Chat Bot">
+                <div class="icono-chat-bot" title="Chat Bot" onclick="openChatbot()" style="cursor: pointer;">
                     <i class="fas fa-robot"></i>
                 </div>
                 
@@ -150,10 +150,32 @@
     </div>
 </div>
 
-<script src="{% static 'js/carrito.js' %}"></script>
-<script src="{% static 'js/productos.js' %}"></script>
-<script src="{% static 'js/tienda.js' %}"></script>
-<script src="{% static 'js/chat_bot.js' %}"></script> 
+<div id="chatBotModal" class="chatbot-modal" style="display: none;">
+    <div class="chatbot-header">
+        <div class="chatbot-title">
+            <i class="fas fa-robot"></i>
+            <h3>Asistente Virtual</h3>
+        </div>
+        <button class="close-chatbot">&times;</button>
+    </div>
+    
+    <div class="chatbot-messages" id="chatBotMessages">
+        <div class="bot-message">
+            <div class="message-bubble">
+                ¡Hola! 👋 Soy tu asistente de The Latte Bear Nails. 
+                Puedo ayudarte a encontrar productos de uñas por color, forma, tamaño o precio. 
+                ¿Qué te gustaría ver? 
+            </div>
+        </div>
+    </div>
+    
+    <div class="chatbot-input">
+        <input type="text" id="chatBotInput" placeholder="Escribe tu consulta... Ej: 'Uñas rosas forma almendra'">
+        <button id="sendBotMessage">
+            <i class="fas fa-paper-plane"></i>
+        </button>
+    </div>
+</div>
 
 <script>
     window.budgetCreateUrl = '{% url "create_budget_from_cart" %}';
@@ -173,7 +195,49 @@
         return cookieValue;
     }
 
+    function openChatbot() {
+        console.log('🎯 Abriendo chatbot...');
+        const modal = document.getElementById('chatBotModal');
+        if (modal) {
+            modal.style.display = 'block';
+            const input = document.getElementById('chatBotInput');
+            if (input) input.focus();
+        }
+    }
+
     document.addEventListener('DOMContentLoaded', function() {
+        console.log('🚀 Inicializando página...');
+        
+        const chatImageInput = document.getElementById('chatImage');
+        const imagePreview = document.getElementById('imagePreview');
+        
+        if (chatImageInput && imagePreview) {
+            console.log('💬 Inicializando chat con imágenes...');
+            const previewImg = document.getElementById('previewImg');
+            const removeImage = document.getElementById('removeImage');
+            
+            chatImageInput.addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        previewImg.src = e.target.result;
+                        imagePreview.style.display = 'block';
+                    }
+                    reader.readAsDataURL(file);
+                }
+            });
+            
+            if (removeImage) {
+                removeImage.addEventListener('click', function() {
+                    chatImageInput.value = '';
+                    imagePreview.style.display = 'none';
+                });
+            }
+        } else {
+            console.log('Chat con imágenes no disponible en esta página (normal)');
+        }
+
         const chatIcon = document.querySelector('.icono-chat-user');
         let displayedMessageIds = new Set(); 
 
@@ -258,28 +322,89 @@
             });
         }
         
-        const chatImageInput = document.getElementById('chatImage');
-        const imagePreview = document.getElementById('imagePreview');
-        const previewImg = document.getElementById('previewImg');
-        const removeImage = document.getElementById('removeImage');
+        const chatbotModal = document.getElementById('chatBotModal');
+        const chatBotInput = document.getElementById('chatBotInput');
+        const sendBotMessage = document.getElementById('sendBotMessage');
+        const closeChatbot = document.querySelector('.close-chatbot');
         
-        chatImageInput.addEventListener('change', function(e) {
-            const file = e.target.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    previewImg.src = e.target.result;
-                    imagePreview.style.display = 'block';
+        if (chatbotModal && chatBotInput && sendBotMessage) {
+            console.log('Inicializando chatbot...');
+            
+            let isLoading = false;
+            
+            sendBotMessage.addEventListener('click', function() {
+                if (isLoading) return;
+                
+                const message = chatBotInput.value.trim();
+                if (!message) return;
+                
+                addBotMessage('user', message);
+                chatBotInput.value = '';
+                isLoading = true;
+                
+                const typingMsg = addBotMessage('bot', 'Escribiendo...', true);
+                
+                setTimeout(() => {
+                    if (typingMsg && typingMsg.parentNode) {
+                        typingMsg.parentNode.removeChild(typingMsg);
+                    }
+                    
+                    const responses = [
+                        `¡Hola! Veo que buscas: "${message}". Te puedo ayudar a encontrar productos por color, forma o tamaño.`,
+                        `Interesante consulta sobre: "${message}". ¿Te gustaría que te muestre algunos productos relacionados?`,
+                        `Perfecto, entiendo que buscas: "${message}". Tenemos varias opciones disponibles.`
+                    ];
+                    const randomResponse = responses[Math.floor(Math.random() * responses.length)];
+                    
+                    addBotMessage('bot', randomResponse);
+                    isLoading = false;
+                }, 1500);
+            });
+            
+            chatBotInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter' && !isLoading) {
+                    sendBotMessage.click();
                 }
-                reader.readAsDataURL(file);
+            });
+            
+            if (closeChatbot) {
+                closeChatbot.addEventListener('click', function() {
+                    chatbotModal.style.display = 'none';
+                });
             }
-        });
-        
-        removeImage.addEventListener('click', function() {
-            chatImageInput.value = '';
-            imagePreview.style.display = 'none';
-        });
-        
+            
+            chatbotModal.addEventListener('click', function(e) {
+                if (e.target === chatbotModal) {
+                    chatbotModal.style.display = 'none';
+                }
+            });
+            
+            function addBotMessage(sender, text, isTyping = false) {
+                const messagesContainer = document.getElementById('chatBotMessages');
+                if (!messagesContainer) return null;
+                
+                const messageDiv = document.createElement('div');
+                messageDiv.className = `${sender}-message`;
+                
+                const bubbleDiv = document.createElement('div');
+                bubbleDiv.className = 'message-bubble';
+                
+                if (isTyping) {
+                    bubbleDiv.innerHTML = `${text}<span class="typing-dots"></span>`;
+                    bubbleDiv.style.opacity = '0.7';
+                } else {
+                    bubbleDiv.textContent = text;
+                }
+                
+                messageDiv.appendChild(bubbleDiv);
+                messagesContainer.appendChild(messageDiv);
+                
+                messagesContainer.scrollTop = messagesContainer.scrollHeight;
+                
+                return messageDiv;
+            }
+        }
+
         document.getElementById('sendChatMessage').addEventListener('click', sendMessageToTelegram);
         
         document.getElementById('chatMessage').addEventListener('keydown', function(e) {
@@ -1172,7 +1297,6 @@
     font-size: 1.2em;
 }
 
-/* Indicador de typing */
 .typing-indicator .message-bubble {
     background: #f0f0f0 !important;
     color: #666 !important;
@@ -1199,7 +1323,6 @@
     40% { transform: scale(1); opacity: 1; }
 }
 
-/* Mejoras para productos */
 .product-image-container {
     position: relative;
     width: 100%;
@@ -1227,31 +1350,7 @@
 }
 </style>
 
-<div id="chatBotModal" class="chatbot-modal">
-    <div class="chatbot-header">
-        <div class="chatbot-title">
-            <i class="fas fa-robot"></i>
-            <h3>Asistente Virtual</h3>
-        </div>
-        <button class="close-chatbot">&times;</button>
-    </div>
-    
-    <div class="chatbot-messages" id="chatBotMessages">
-        <div class="bot-message">
-            <div class="message-bubble">
-                ¡Hola! 👋 Soy tu asistente de The Latte Bear Nails. 
-                Puedo ayudarte a encontrar productos de uñas por color, forma, tamaño o precio. 
-                ¿Qué te gustaría ver? 
-            </div>
-        </div>
-    </div>
-    
-    <div class="chatbot-input">
-        <input type="text" id="chatBotInput" placeholder="Escribe tu consulta... Ej: 'Uñas rosas forma almendra'">
-        <button id="sendBotMessage">
-            <i class="fas fa-paper-plane"></i>
-        </button>
-    </div>
-</div>
-
+<script src="{% static 'js/carrito.js' %}"></script>
+<script src="{% static 'js/productos.js' %}"></script>
+<script src="{% static 'js/tienda.js' %}"></script>
 {% endblock %}
