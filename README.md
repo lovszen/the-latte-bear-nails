@@ -40,7 +40,7 @@ Diseñé un dashboard con métricas y accesos rápidos
 
 Integré Cloudinary para gestión de imágenes
 
-Desarrollé un chat bot básico con interfaz personalizada
+Integré un chat bot con IA 
 
 Contribuí en la gestión de presupuestos del panel admin
 
