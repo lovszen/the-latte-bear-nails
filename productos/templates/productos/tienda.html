@@ -196,7 +196,7 @@
     }
 
     function openChatbot() {
-        console.log('🎯 Abriendo chatbot...');
+        console.log('Abriendo chatbot...');
         const modal = document.getElementById('chatBotModal');
         if (modal) {
             modal.style.display = 'block';
@@ -206,13 +206,15 @@
     }
 
     document.addEventListener('DOMContentLoaded', function() {
-        console.log('🚀 Inicializando página...');
+        console.log('Inicializando página...');
         
         const chatImageInput = document.getElementById('chatImage');
         const imagePreview = document.getElementById('imagePreview');
+        const sendChatMessage = document.getElementById('sendChatMessage');
+        const chatMessage = document.getElementById('chatMessage');
         
         if (chatImageInput && imagePreview) {
-            console.log('💬 Inicializando chat con imágenes...');
+            console.log('Inicializando chat con imágenes...');
             const previewImg = document.getElementById('previewImg');
             const removeImage = document.getElementById('removeImage');
             
@@ -245,7 +247,7 @@
             fetch('/api/chat/list/', {
                 method: 'GET',
                 headers: {
-                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || ''
                 }
             })
             .then(response => {
@@ -261,19 +263,18 @@
                 } else if (data && typeof data === 'object' && Array.isArray(data.results)) {
                     messages = data.results;
                 } else {
-                    console.error('Invalid response format: expected an array or paginated object but got:', data);
-                    addMessageToChat('Error: Formato de respuesta inválido', 'mensaje-sistema');
+                    console.error('Invalid response format:', data);
                     return;
                 }
                 const chatMessages = document.getElementById('chatMessages');
+                if (!chatMessages) return;
                 
                 messages.forEach(msg => {
                     const messageKey = `${msg.timestamp}_${msg.message}`;
                     
                     if (!displayedMessageIds.has(messageKey)) {
                         const isUserMessage = msg.message_type === 'user';
-                        const isOwnMessage = isUserMessage;
-                        const className = isOwnMessage ? 'mensaje-propio' : 'mensaje-ajeno';
+                        const className = isUserMessage ? 'mensaje-propio' : 'mensaje-ajeno';
                         const senderName = isUserMessage ? 'Tú' : 'Admin';
                         
                         let messageText = '';
@@ -285,28 +286,12 @@
                             messageText = `${senderName}: [Mensaje]`;
                         }
                         
-                        addMessageToChat(messageText, className, msg.timestamp, msg.image_url);
                         displayedMessageIds.add(messageKey);
                     }
                 });
-                
-                chatMessages.scrollTop = chatMessages.scrollHeight;
             })
             .catch(error => {
                 console.error('Error loading chat history:', error);
-                console.error('Error details:', {
-                    message: error.message,
-                    name: error.name,
-                    stack: error.stack
-                });
-                
-                if (error.name === 'TypeError' && error.message.includes('forEach')) {
-                    addMessageToChat('Error: Formato de datos inválido en la respuesta del servidor', 'mensaje-sistema');
-                } else if (error.message.includes('HTTP error')) {
-                    addMessageToChat(`Error de red: ${error.message}`, 'mensaje-sistema');
-                } else {
-                    addMessageToChat('Error al cargar el historial de chat: ' + error.message, 'mensaje-sistema');
-                }
             });
         }
         
@@ -316,151 +301,66 @@
 
         if (chatIcon) {
             chatIcon.addEventListener('click', function() {
-                document.getElementById('modalChat').classList.add('mostrar');
-                resetMessageTracker();
-                loadChatHistory(); 
-            });
-        }
-        
-        const chatbotModal = document.getElementById('chatBotModal');
-        const chatBotInput = document.getElementById('chatBotInput');
-        const sendBotMessage = document.getElementById('sendBotMessage');
-        const closeChatbot = document.querySelector('.close-chatbot');
-        
-        if (chatbotModal && chatBotInput && sendBotMessage) {
-            console.log('Inicializando chatbot...');
-            
-            let isLoading = false;
-            
-            sendBotMessage.addEventListener('click', function() {
-                if (isLoading) return;
-                
-                const message = chatBotInput.value.trim();
-                if (!message) return;
-                
-                addBotMessage('user', message);
-                chatBotInput.value = '';
-                isLoading = true;
-                
-                const typingMsg = addBotMessage('bot', 'Escribiendo...', true);
-                
-                setTimeout(() => {
-                    if (typingMsg && typingMsg.parentNode) {
-                        typingMsg.parentNode.removeChild(typingMsg);
-                    }
-                    
-                    const responses = [
-                        `¡Hola! Veo que buscas: "${message}". Te puedo ayudar a encontrar productos por color, forma o tamaño.`,
-                        `Interesante consulta sobre: "${message}". ¿Te gustaría que te muestre algunos productos relacionados?`,
-                        `Perfecto, entiendo que buscas: "${message}". Tenemos varias opciones disponibles.`
-                    ];
-                    const randomResponse = responses[Math.floor(Math.random() * responses.length)];
-                    
-                    addBotMessage('bot', randomResponse);
-                    isLoading = false;
-                }, 1500);
-            });
-            
-            chatBotInput.addEventListener('keypress', function(e) {
-                if (e.key === 'Enter' && !isLoading) {
-                    sendBotMessage.click();
+                const modalChat = document.getElementById('modalChat');
+                if (modalChat) {
+                    modalChat.classList.add('mostrar');
+                    resetMessageTracker();
+                    loadChatHistory(); 
                 }
             });
-            
-            if (closeChatbot) {
-                closeChatbot.addEventListener('click', function() {
-                    chatbotModal.style.display = 'none';
-                });
-            }
-            
-            chatbotModal.addEventListener('click', function(e) {
-                if (e.target === chatbotModal) {
-                    chatbotModal.style.display = 'none';
-                }
-            });
-            
-            function addBotMessage(sender, text, isTyping = false) {
-                const messagesContainer = document.getElementById('chatBotMessages');
-                if (!messagesContainer) return null;
-                
-                const messageDiv = document.createElement('div');
-                messageDiv.className = `${sender}-message`;
-                
-                const bubbleDiv = document.createElement('div');
-                bubbleDiv.className = 'message-bubble';
-                
-                if (isTyping) {
-                    bubbleDiv.innerHTML = `${text}<span class="typing-dots"></span>`;
-                    bubbleDiv.style.opacity = '0.7';
-                } else {
-                    bubbleDiv.textContent = text;
-                }
-                
-                messageDiv.appendChild(bubbleDiv);
-                messagesContainer.appendChild(messageDiv);
-                
-                messagesContainer.scrollTop = messagesContainer.scrollHeight;
-                
-                return messageDiv;
-            }
         }
 
-        document.getElementById('sendChatMessage').addEventListener('click', sendMessageToTelegram);
-        
-        document.getElementById('chatMessage').addEventListener('keydown', function(e) {
-            if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                sendMessageToTelegram();
-            }
-        });
+        if (sendChatMessage && chatMessage) {
+            console.log('Configurando botón de envío del chat Telegram...');
+            
+            sendChatMessage.addEventListener('click', sendMessageToTelegram);
+            
+            chatMessage.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    sendMessageToTelegram();
+                }
+            });
+        }
         
         async function sendMessageToTelegram() {
-            const message = document.getElementById('chatMessage').value;
+            const message = document.getElementById('chatMessage')?.value;
+            const chatImageInput = document.getElementById('chatImage');
             
-            if (!message && !chatImageInput.files[0]) {
+            if (!message && !chatImageInput?.files[0]) {
                 alert('Por favor escribe un mensaje o selecciona una imagen');
                 return;
             }
             
             const sendButton = document.getElementById('sendChatMessage');
+            if (!sendButton) return;
+            
             sendButton.disabled = true;
             sendButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Enviando...';
-            
-            const messageText = message ? `Tú: ${message}` : 'Tú: [Imagen]';
-            addMessageToChat(messageText, 'mensaje-propio', null, chatImageInput.files[0] ? 'uploading' : null);
             
             try {
                 let imageUrl = '';
                 
-                if (chatImageInput.files[0]) {
+                if (chatImageInput?.files[0]) {
                     imageUrl = await uploadImageToCloudinary(chatImageInput.files[0]);
                 }
                 
                 await sendToBackend(message, imageUrl);
                 
-                document.getElementById('chatMessage').value = '';
-                chatImageInput.value = '';
-                imagePreview.style.display = 'none';
+                if (document.getElementById('chatMessage')) {
+                    document.getElementById('chatMessage').value = '';
+                }
+                if (chatImageInput) {
+                    chatImageInput.value = '';
+                }
+                const imagePreview = document.getElementById('imagePreview');
+                if (imagePreview) {
+                    imagePreview.style.display = 'none';
+                }
                 
-                addMessageToChat('Mensaje enviado a Telegram ✓', 'mensaje-sistema');
                 loadChatHistory();
             } catch (error) {
                 console.error('Error sending message:', error);
-                console.error('Error details:', {
-                    message: error.message,
-                    name: error.name,
-                    stack: error.stack
-                });
-                
-                let errorMessage = 'Error al enviar el mensaje';
-                if (error.message) {
-                    errorMessage += ': ' + error.message;
-                } else if (error.toString) {
-                    errorMessage += ': ' + error.toString();
-                }
-                
-                addMessageToChat(errorMessage, 'mensaje-sistema');
-                loadChatHistory();
             } finally {
                 sendButton.disabled = false;
                 sendButton.innerHTML = '<i class="fas fa-paper-plane"></i> Enviar';
@@ -479,7 +379,7 @@
                 method: 'POST',
                 body: formData,
                 headers: {
-                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || ''
                 }
             });
             
@@ -530,33 +430,6 @@
             }
             
             return data;
-        }
-        
-        function addMessageToChat(text, className, timestamp = null, imageUrl = null) {
-            const chatMessages = document.getElementById('chatMessages');
-            const messageDiv = document.createElement('div');
-            messageDiv.className = `mensaje-chat ${className}`;
-            
-            let contentHTML = '';
-            
-            if (text && text.trim() !== '') {
-                contentHTML += `<div class="message-text">${text}</div>`;
-            }
-            
-            if (imageUrl) {
-                contentHTML += `<div class="message-image"><img src="${imageUrl}" alt="Imagen del mensaje" style="max-width: 200px; border-radius: 8px; margin-top: 5px;"></div>`;
-            }
-
-            if (timestamp) {
-                const date = new Date(timestamp);
-                const timeString = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-                messageDiv.innerHTML = `${contentHTML}<div class="message-time">${timeString}</div>`;
-            } else {
-                messageDiv.innerHTML = contentHTML;
-            }
-            
-            chatMessages.appendChild(messageDiv);
-            chatMessages.scrollTop = chatMessages.scrollHeight;
         }
     });
 </script>
@@ -1100,14 +973,20 @@
 }
 
 .chatbot-messages {
-    flex: 1;
-    padding: 15px;
-    overflow-y: auto;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    background: #f8f9fa;
+    flex: 1 !important;
+    padding: 15px !important;
+    overflow-y: scroll !important;
+    overflow-x: hidden !important;
+    max-height: 380px !important;
+    min-height: 380px !important;
+    height: 380px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 10px !important;
+    background: #f8f9fa !important;
+    -webkit-overflow-scrolling: touch !important;
 }
+
 
 .bot-message {
     display: flex;
@@ -1120,7 +999,7 @@
 }
 
 .message-bubble {
-    max-width: 80%;
+    max-width: 80% !important; 
     padding: 15px 20px;
     border-radius: 18px;
     font-size: 1rem;
@@ -1348,9 +1227,110 @@
     color: #ff69b4;
     font-size: 1.5em;
 }
+
+.productos-encontrados {
+    margin: 10px 0;
+}
+
+.productos-bubble {
+    background: transparent !important;
+    box-shadow: none !important;
+    padding: 5px !important;
+}
+
+.productos-grid-chat {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.producto-chat-card {
+    background: white;
+    border-radius: 10px;
+    padding: 10px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border: 2px solid #ffe4f4;
+}
+
+.producto-chat-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 20px rgba(255, 107, 156, 0.3);
+    border-color: #ffc0cb;
+}
+
+.producto-chat-img {
+    width: 100%;
+    height: 80px;
+    object-fit: cover;
+    border-radius: 8px;
+    margin-bottom: 8px;
+}
+
+.producto-chat-info {
+    text-align: center;
+}
+
+.producto-chat-nombre {
+    font-weight: bold;
+    font-size: 0.85em;
+    color: #333;
+    margin-bottom: 5px;
+    min-height: 32px;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    line-clamp: 2;
+    box-orient: vertical;
+}
+
+.producto-chat-detalles {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    margin: 5px 0;
+    flex-wrap: wrap;
+}
+
+.producto-chat-detalles span {
+    font-size: 0.7em;
+    background: #f0f0f0;
+    padding: 2px 8px;
+    border-radius: 12px;
+    color: #666;
+}
+
+.producto-chat-precio {
+    font-weight: bold;
+    color: #ff6b9c;
+    font-size: 1.1em;
+    margin-top: 5px;
+}
+
+.producto-resaltado {
+    animation: pulso-resaltado 1.5s ease-in-out infinite;
+    border: 3px solid #ff6b9c !important;
+    box-shadow: 0 0 30px rgba(255, 107, 156, 0.6) !important;
+}
+
+@keyframes pulso-resaltado {
+    0%, 100% {
+        box-shadow: 0 0 30px rgba(255, 107, 156, 0.6);
+    }
+    50% {
+        box-shadow: 0 0 40px rgba(255, 107, 156, 0.9);
+    }
+}
+
+.producto-card {
+    transition: all 0.3s ease;
+}
 </style>
 
+<script src="{% static 'js/chat_bot.js' %}"></script>
 <script src="{% static 'js/carrito.js' %}"></script>
 <script src="{% static 'js/productos.js' %}"></script>
-<script src="{% static 'js/tienda.js' %}"></script>
+<script src="{% static 'js/tienda.js' %}"></script> 
 {% endblock %}
