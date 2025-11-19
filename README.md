@@ -57,29 +57,38 @@ Generación de Presupuestos: Creación de PDFs y envío por email (ReportLab).
 # Vistas Principales
 
 Página de la Tienda 
+
 ![alt text](interfaz-tienda.png)
 
 Carrito + proceso de Pago
+
 ![alt text](image-2.png)
 ![alt text](image-3.png)
 
 Chat soporte y chat bot
+
 ![alt text](image-4.png)
-![alt text](image-5.png)
+![alt text](chat-bot1.png)
+![alt text](chat-bot2.png)
 
 Panel para personalización
+
 ![alt text](interfaz-personalizacion.png) 
 
 Panel presupuestos del cliente
+
 ![alt text](presupuestos.png)
 
 Panel gestor de productos para administradores
+
 ![alt text](productos.png)
 
 Panel gestor de solicitudes para administradores
+
 ![alt text](solicitudes.png)
 
 Dashboard para administradores
+
 ![alt text](panel-admin.png)
 
 # Instalación Local
