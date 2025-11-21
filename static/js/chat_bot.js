@@ -2,17 +2,10 @@ class ChatbotInteligente {
     constructor() {
         this.productos = [];
         this.isLoading = false;
-        this.init();
+        this.initialized = false;
     }
 
-    init() {
-        setTimeout(() => {
-            this.cargarProductos();
-            this.setupChatbot();
-        }, 500);
-    }
-
-    cargarProductos() {
+    async cargarProductos() {
         const cards = document.querySelectorAll('.producto-card');
         this.productos = [];
         
@@ -41,52 +34,94 @@ class ChatbotInteligente {
         });
     }
 
-    setupChatbot() {
-        this.modal = document.getElementById('chatBotModal');
-        this.messages = document.getElementById('chatBotMessages');
-        this.input = document.getElementById('chatBotInput');
-        this.sendBtn = document.getElementById('sendBotMessage');
-        this.closeBtn = document.querySelector('.close-chatbot');
+    async init() {
+        if (this.initialized) return;
         
-        if (!this.modal || !this.messages || !this.input || !this.sendBtn) return;
+        await this.cargarProductos();
+        this.setupEventListeners();
+        this.initialized = true;
+    }
 
-        this.messages.innerHTML = '';
-        
-        this.agregarMensaje('bot', 
-            `Hola! Soy tu asistente inteligente.\n\n` +
-            `Encontré ${this.productos.length} productos.\n\n` +
-            `Ejemplos de búsqueda:\n` +
-            `• "rosa y negro"\n` +
-            `• "almendra"\n` +
-            `• "nombre del producto"\n\n` +
-            `¿Qué buscas?`
-        );
+    setupEventListeners() {
+        const closeBtn = document.querySelector('.close-chatbot');
+        if (closeBtn) {
+            closeBtn.onclick = () => this.close();
+        }
 
-        this.sendBtn.onclick = () => this.enviarMensaje();
-        this.input.onkeypress = (e) => {
-            if (e.key === 'Enter' && !this.isLoading) this.enviarMensaje();
-        };
-        
-        if (this.closeBtn) {
-            this.closeBtn.onclick = () => {
-                this.modal.style.display = 'none';
-                this.restaurarProductos();
+        const sendBtn = document.getElementById('sendBotMessage');
+        if (sendBtn) {
+            sendBtn.onclick = () => this.enviarMensaje();
+        }
+
+        const input = document.getElementById('chatBotInput');
+        if (input) {
+            input.onkeypress = (e) => {
+                if (e.key === 'Enter' && !this.isLoading) {
+                    this.enviarMensaje();
+                }
             };
         }
     }
 
+    async open() {
+        const modal = document.getElementById('chatBotModal');
+        if (modal) {
+            if (!this.initialized) {
+                await this.init();
+            }
+            
+            modal.style.display = 'flex';
+            modal.classList.add('active');
+            this.mostrarMensajeBienvenida();
+            
+            const input = document.getElementById('chatBotInput');
+            if (input) input.focus();
+        }
+    }
+
+    close() {
+        const modal = document.getElementById('chatBotModal');
+        if (modal) {
+            modal.style.display = 'none';
+            modal.classList.remove('active');
+            this.restaurarProductos();
+        }
+    }
+
+    mostrarMensajeBienvenida() {
+        const messages = document.getElementById('chatBotMessages');
+        if (!messages || messages.children.length > 0) return;
+        
+        this.agregarMensaje('bot', 
+            `Hola! Soy tu asistente de The Latte Bear Nails.\n\n` +
+            `Encontré ${this.productos.length} productos disponibles.\n\n` +
+            `Puedo ayudarte a buscar por:\n` +
+            `• Color (rosa, negro, blanco, etc.)\n` +
+            `• Forma (almendra, stiletto, coffin, etc.)\n` +
+            `• Tamaño (corto, medio, largo)\n\n` +
+            `Ejemplos: "rosa y negro", "almendra", "set floral"\n\n` +
+            `¿Qué te gustaría ver?`
+        );
+    }
+
     async enviarMensaje() {
-        const texto = this.input.value.trim();
+        const input = document.getElementById('chatBotInput');
+        const sendBtn = document.getElementById('sendBotMessage');
+        const texto = input?.value.trim();
+        
         if (!texto || this.isLoading) return;
 
         this.agregarMensaje('user', texto);
-        this.input.value = '';
+        input.value = '';
         this.isLoading = true;
-        this.sendBtn.disabled = true;
-        this.sendBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+        
+        if (sendBtn) {
+            sendBtn.disabled = true;
+            sendBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+        }
 
         const typingId = 'typing-' + Date.now();
-        this.agregarMensaje('bot', 'Buscando...', typingId);
+        this.agregarMensaje('bot', 'Buscando productos...', typingId);
 
         try {
             const encontrados = this.buscarExacto(texto);
@@ -100,7 +135,7 @@ class ChatbotInteligente {
             } catch (error) {
                 respuestaIA = encontrados.length > 0 
                     ? `Encontré ${encontrados.length} ${encontrados.length === 1 ? 'producto' : 'productos'} para ti`
-                    : `No encontré productos con esos criterios. Intenta buscar por color, forma o nombre.`;
+                    : `No encontré productos exactos. Intenta buscar por color, forma o nombre.`;
             }
 
             this.agregarMensaje('bot', respuestaIA);
@@ -118,8 +153,10 @@ class ChatbotInteligente {
             this.agregarMensaje('bot', 'Error al procesar la búsqueda. Intenta de nuevo.');
         } finally {
             this.isLoading = false;
-            this.sendBtn.disabled = false;
-            this.sendBtn.innerHTML = '<i class="fas fa-paper-plane"></i>';
+            if (sendBtn) {
+                sendBtn.disabled = false;
+                sendBtn.innerHTML = '<i class="fas fa-paper-plane"></i>';
+            }
         }
     }
 
@@ -153,7 +190,7 @@ class ChatbotInteligente {
                                             formasMencionadas.length > 0 || 
                                             tamañosMencionados.length > 0;
 
-        const resultados = this.productos.filter(prod => {
+        return this.productos.filter(prod => {
             const textoProducto = `${prod.nombre} ${prod.color} ${prod.forma} ${prod.tamaño}`.toLowerCase();
             
             if (coloresMencionados.length > 0) {
@@ -187,8 +224,6 @@ class ChatbotInteligente {
 
             return false;
         });
-
-        return resultados;
     }
 
     mostrarSugerencias(queryOriginal) {
@@ -227,7 +262,6 @@ class ChatbotInteligente {
                 throw new Error(data.error || 'Error en el servidor');
             }
         } catch (error) {
-            console.error('Error llamando a Gemini:', error);
             if (productosEncontrados.length > 0) {
                 return `Encontré ${productosEncontrados.length} producto${productosEncontrados.length === 1 ? '' : 's'} para "${query}"`;
             } else {
@@ -238,7 +272,14 @@ class ChatbotInteligente {
 
     getCsrfToken() {
         const token = document.querySelector('[name=csrfmiddlewaretoken]');
-        return token ? token.value : '';
+        if (token) return token.value;
+        
+        const cookies = document.cookie.split(';');
+        for (let cookie of cookies) {
+            const [name, value] = cookie.trim().split('=');
+            if (name === 'csrftoken') return value;
+        }
+        return '';
     }
 
     mostrarProductosEnChat(productos) {
@@ -271,10 +312,13 @@ class ChatbotInteligente {
             html += `<p style="text-align: center; margin-top: 10px; font-size: 0.9em; color: #666;">+ ${productos.length - max} más en la tienda</p>`;
         }
 
+        const messages = document.getElementById('chatBotMessages');
+        if (!messages) return;
+
         const div = document.createElement('div');
         div.className = 'bot-message';
         div.innerHTML = `<div class="message-bubble" style="background: transparent !important; box-shadow: none !important; max-width: 95% !important; padding: 10px 5px !important;">${html}</div>`;
-        this.messages.appendChild(div);
+        messages.appendChild(div);
         this.scrollChat();
     }
 
@@ -316,7 +360,7 @@ class ChatbotInteligente {
 
         btn = document.createElement('button');
         btn.id = 'btn-reset-filtro';
-        btn.innerHTML = 'Mostrar todos';
+        btn.innerHTML = '✕ Mostrar todos';
         btn.style.cssText = `
             position: fixed;
             top: 80px;
@@ -341,6 +385,9 @@ class ChatbotInteligente {
     }
 
     agregarMensaje(tipo, texto, id = null) {
+        const messages = document.getElementById('chatBotMessages');
+        if (!messages) return;
+        
         const div = document.createElement('div');
         div.className = `${tipo}-message`;
         if (id) div.id = id;
@@ -350,13 +397,16 @@ class ChatbotInteligente {
         bubble.innerHTML = texto.replace(/\n/g, '<br>');
         
         div.appendChild(bubble);
-        this.messages.appendChild(div);
+        messages.appendChild(div);
         this.scrollChat();
     }
 
     scrollChat() {
+        const messages = document.getElementById('chatBotMessages');
+        if (!messages) return;
+        
         setTimeout(() => {
-            this.messages.scrollTop = this.messages.scrollHeight;
+            messages.scrollTop = messages.scrollHeight;
         }, 100);
     }
 }
@@ -364,9 +414,20 @@ class ChatbotInteligente {
 window.chatbotInteligente = new ChatbotInteligente();
 
 window.openChatbot = function() {
-    const modal = document.getElementById('chatBotModal');
-    if (modal) {
-        modal.style.display = 'block';
-        document.getElementById('chatBotInput')?.focus();
+    if (window.chatbotInteligente) {
+        window.chatbotInteligente.open();
     }
 };
+
+window.closeChatbot = function() {
+    if (window.chatbotInteligente) {
+        window.chatbotInteligente.close();
+    }
+};
+
+document.addEventListener('DOMContentLoaded', function() {
+    const chatbotModal = document.getElementById('chatBotModal');
+    if (chatbotModal && chatbotModal.parentNode !== document.body) {
+        document.body.appendChild(chatbotModal);
+    }
+});

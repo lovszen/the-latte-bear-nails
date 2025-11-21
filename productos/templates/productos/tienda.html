@@ -3,6 +3,10 @@
 
 {% block title %}Tienda · The Latte Bear Nails{% endblock %}
 
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/components/chat_bot.css' %}?v=2">
+{% endblock %}
+
 {% block content %}
 <div class="tienda-container">
     <aside class="menu-lateral"></aside>
@@ -149,36 +153,20 @@
         </form>
     </div>
 </div>
-
-<div id="chatBotModal" class="chatbot-modal" style="display: none;">
-    <div class="chatbot-header">
-        <div class="chatbot-title">
-            <i class="fas fa-robot"></i>
-            <h3>Asistente Virtual</h3>
-        </div>
-        <button class="close-chatbot">&times;</button>
-    </div>
-    
-    <div class="chatbot-messages" id="chatBotMessages">
-        <div class="bot-message">
-            <div class="message-bubble">
-                ¡Hola! 👋 Soy tu asistente de The Latte Bear Nails. 
-                Puedo ayudarte a encontrar productos de uñas por color, forma, tamaño o precio. 
-                ¿Qué te gustaría ver? 
-            </div>
-        </div>
-    </div>
-    
-    <div class="chatbot-input">
-        <input type="text" id="chatBotInput" placeholder="Escribe tu consulta... Ej: 'Uñas rosas forma almendra'">
-        <button id="sendBotMessage">
-            <i class="fas fa-paper-plane"></i>
-        </button>
-    </div>
-</div>
-
 <script>
-    window.budgetCreateUrl = '{% url "create_budget_from_cart" %}';
+     function openChatbot() {
+        if (window.chatbotInteligente) {
+            window.chatbotInteligente.open();
+        }
+    }
+
+    function closeChatbot() {
+        if (window.chatbotInteligente) {
+            window.chatbotInteligente.close();
+        }
+    }
+
+     window.budgetCreateUrl = '{% url "create_budget_from_cart" %}';
     
     function getCookie(name) {
         let cookieValue = null;
@@ -193,16 +181,6 @@
             }
         }
         return cookieValue;
-    }
-
-    function openChatbot() {
-        console.log('Abriendo chatbot...');
-        const modal = document.getElementById('chatBotModal');
-        if (modal) {
-            modal.style.display = 'block';
-            const input = document.getElementById('chatBotInput');
-            if (input) input.focus();
-        }
     }
 
     document.addEventListener('DOMContentLoaded', function() {
@@ -907,173 +885,6 @@
         transform: translateY(-2px);
     }
 
-
-.icono-chat-bot:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(255, 105, 180, 0.4);
-}
-
-.chatbot-modal {
-    position: fixed;
-    bottom: 80px;
-    right: 20px;
-    width: 350px;
-    height: 500px;
-    background: white;
-    border-radius: 15px;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
-    z-index: 1001;
-    display: none;
-    flex-direction: column;
-    border: 2px solid #ffc0cb;
-}
-
-.chatbot-modal.active {
-    display: flex;
-}
-
-.chatbot-header {
-    background: #522b0b;
-    color: white;
-    padding: 15px;
-    border-top-left-radius: 13px;
-    border-top-right-radius: 13px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-.chatbot-title {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
-
-.chatbot-title h3 {
-    margin: 0;
-    font-size: 1.1rem;
-}
-
-.chatbot-title i {
-    font-size: 1.3rem;
-}
-
-.close-chatbot {
-    background: none;
-    border: none;
-    color: white;
-    font-size: 1.5rem;
-    cursor: pointer;
-    padding: 0;
-    width: 30px;
-    height: 30px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.chatbot-messages {
-    flex: 1 !important;
-    padding: 15px !important;
-    overflow-y: scroll !important;
-    overflow-x: hidden !important;
-    max-height: 380px !important;
-    min-height: 380px !important;
-    height: 380px !important;
-    display: flex !important;
-    flex-direction: column !important;
-    gap: 10px !important;
-    background: #f8f9fa !important;
-    -webkit-overflow-scrolling: touch !important;
-}
-
-
-.bot-message {
-    display: flex;
-    justify-content: flex-start;
-}
-
-.user-message {
-    display: flex;
-    justify-content: flex-end;
-}
-
-.message-bubble {
-    max-width: 80% !important; 
-    padding: 15px 20px;
-    border-radius: 18px;
-    font-size: 1rem;
-    line-height: 1.4;
-}
-
-.bot-message .message-bubble {
-    background: white;
-    color: #333;
-    border-bottom-left-radius: 5px;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-}
-
-.user-message .message-bubble {
-    background: #ffc0cb;
-    color: white;
-    border-bottom-right-radius: 5px;
-}
-
-.chatbot-input {
-    display: flex;
-    padding: 15px;
-    border-top: 1px solid #e0e0e0;
-    background: white;
-    border-bottom-left-radius: 13px;
-    border-bottom-right-radius: 13px;
-}
-
-#chatBotInput {
-    flex: 1;
-    padding: 10px 15px;
-    border: 1px solid #ddd;
-    border-radius: 25px;
-    outline: none;
-    font-size: 0.9rem;
-}
-
-#chatBotInput:focus {
-    border-color: #ffc0cb;
-}
-
-#sendBotMessage {
-    background: #ffc0cb;
-    color: white;
-    border: none;
-    border-radius: 50%;
-    width: 40px;
-    height: 40px;
-    margin-left: 10px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-#sendBotMessage:hover {
-    background: #ffc0cb;
-}
-
-.bot-products {
-    background: white;
-    border-radius: 10px;
-    padding: 10px;
-    margin: 5px 0;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-}
-
-.products-grid {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 8px;
-    margin-top: 8px;
-}
-
 .product-card {
     background: #f8f9fa;
     border-radius: 8px;
@@ -1328,6 +1139,10 @@
     transition: all 0.3s ease;
 }
 </style>
+
+{% block extra_modals %}
+{% include "productos/components/chat_bot.html" %}
+{% endblock %}
 
 <script src="{% static 'js/chat_bot.js' %}"></script>
 <script src="{% static 'js/carrito.js' %}"></script>
