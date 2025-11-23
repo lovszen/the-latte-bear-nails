@@ -36,7 +36,6 @@ class ChatbotInteligente {
 
     async init() {
         if (this.initialized) return;
-        
         await this.cargarProductos();
         this.setupEventListeners();
         this.initialized = true;
@@ -44,14 +43,10 @@ class ChatbotInteligente {
 
     setupEventListeners() {
         const closeBtn = document.querySelector('.close-chatbot');
-        if (closeBtn) {
-            closeBtn.onclick = () => this.close();
-        }
+        if (closeBtn) closeBtn.onclick = () => this.close();
 
         const sendBtn = document.getElementById('sendBotMessage');
-        if (sendBtn) {
-            sendBtn.onclick = () => this.enviarMensaje();
-        }
+        if (sendBtn) sendBtn.onclick = () => this.enviarMensaje();
 
         const input = document.getElementById('chatBotInput');
         if (input) {
@@ -66,16 +61,11 @@ class ChatbotInteligente {
     async open() {
         const modal = document.getElementById('chatBotModal');
         if (modal) {
-            if (!this.initialized) {
-                await this.init();
-            }
-            
+            if (!this.initialized) await this.init();
             modal.style.display = 'flex';
             modal.classList.add('active');
             this.mostrarMensajeBienvenida();
-            
-            const input = document.getElementById('chatBotInput');
-            if (input) input.focus();
+            document.getElementById('chatBotInput')?.focus();
         }
     }
 
@@ -92,16 +82,8 @@ class ChatbotInteligente {
         const messages = document.getElementById('chatBotMessages');
         if (!messages || messages.children.length > 0) return;
         
-        this.agregarMensaje('bot', 
-            `Hola! Soy tu asistente de The Latte Bear Nails.\n\n` +
-            `Encontré ${this.productos.length} productos disponibles.\n\n` +
-            `Puedo ayudarte a buscar por:\n` +
-            `• Color (rosa, negro, blanco, etc.)\n` +
-            `• Forma (almendra, stiletto, coffin, etc.)\n` +
-            `• Tamaño (corto, medio, largo)\n\n` +
-            `Ejemplos: "rosa y negro", "almendra", "set floral"\n\n` +
-            `¿Qué te gustaría ver?`
-        );
+        const mensaje = `Hola! Soy tu asistente de The Latte Bear Nails.\n\nEncontré ${this.productos.length} productos disponibles.\n\nPuedo ayudarte a buscar por:\n• Color (rosa, negro, blanco, etc.)\n• Forma (almendra, stiletto, coffin, etc.)\n• Tamaño (corto, medio, largo)\n\nEjemplos: "rosa y negro", "almendra", "set floral"\n\n¿Qué te gustaría ver?`;
+        this.agregarMensaje('bot', mensaje);
     }
 
     async enviarMensaje() {
@@ -124,32 +106,19 @@ class ChatbotInteligente {
         this.agregarMensaje('bot', 'Buscando productos...', typingId);
 
         try {
-            const encontrados = this.buscarExacto(texto);
-            
-            const typingEl = document.getElementById(typingId);
-            if (typingEl) typingEl.remove();
+            document.getElementById(typingId)?.remove();
 
             let respuestaIA;
             try {
-                respuestaIA = await this.llamarGemini(texto, encontrados);
-            } catch (error) {
-                respuestaIA = encontrados.length > 0 
-                    ? `Encontré ${encontrados.length} ${encontrados.length === 1 ? 'producto' : 'productos'} para ti`
-                    : `No encontré productos exactos. Intenta buscar por color, forma o nombre.`;
+                respuestaIA = await this.llamarGemini(texto, 0);
+            } catch {
+                respuestaIA = 'No encontré productos. Intenta con otras palabras.';
             }
 
             this.agregarMensaje('bot', respuestaIA);
 
-            if (encontrados.length > 0) {
-                this.mostrarProductosEnChat(encontrados);
-                this.filtrarPagina(encontrados);
-            } else {
-                this.mostrarSugerencias(texto);
-            }
-
-        } catch (error) {
-            const typingEl = document.getElementById(typingId);
-            if (typingEl) typingEl.remove();
+        } catch {
+            document.getElementById(typingId)?.remove();
             this.agregarMensaje('bot', 'Error al procesar la búsqueda. Intenta de nuevo.');
         } finally {
             this.isLoading = false;
@@ -160,87 +129,31 @@ class ChatbotInteligente {
         }
     }
 
-    buscarExacto(query) {
-        const q = query.toLowerCase();
-
-        const coloresMencionados = [];
-        const coloresComunes = ['rosa', 'negro', 'blanco', 'rojo', 'azul', 'verde', 'amarillo', 'morado', 'nude', 'beige', 'transparente'];
-        coloresComunes.forEach(color => {
-            if (q.includes(color)) coloresMencionados.push(color);
-        });
-
-        const formasMencionadas = [];
-        const formasComunes = ['almendra', 'cuadrada', 'stiletto', 'ovalada', 'coffin', 'bailarina'];
-        formasComunes.forEach(forma => {
-            if (q.includes(forma)) formasMencionadas.push(forma);
-        });
-
-        const tamañosMencionados = [];
-        const tamañosComunes = ['corto', 'corta', 'medio', 'media', 'largo', 'larga', 'xl', 'pequeño', 'pequeña'];
-        tamañosComunes.forEach(tamaño => {
-            if (q.includes(tamaño)) tamañosMencionados.push(tamaño);
-        });
-
-        const palabrasExcluir = ['set', 'uñas', 'con', 'para', 'de', 'la', 'el', 'y', 'a', 'en'];
-        const palabrasQuery = q.split(' ')
-            .filter(p => p.length > 2 && !palabrasExcluir.includes(p))
-            .filter(p => !coloresComunes.includes(p) && !formasComunes.includes(p) && !tamañosComunes.includes(p));
-
-        const tienesCriteriosEspecificos = coloresMencionados.length > 0 || 
-                                            formasMencionadas.length > 0 || 
-                                            tamañosMencionados.length > 0;
-
-        return this.productos.filter(prod => {
-            const textoProducto = `${prod.nombre} ${prod.color} ${prod.forma} ${prod.tamaño}`.toLowerCase();
-            
-            if (coloresMencionados.length > 0) {
-                const tieneRosa = coloresMencionados.includes('rosa');
-                const tieneNegro = coloresMencionados.includes('negro');
-                
-                if (tieneRosa && tieneNegro) {
-                    const cumpleAmbos = textoProducto.includes('rosa') && textoProducto.includes('negro');
-                    if (!cumpleAmbos) return false;
-                } else {
-                    const cumpleColor = coloresMencionados.every(color => textoProducto.includes(color));
-                    if (!cumpleColor) return false;
-                }
-            }
-
-            if (formasMencionadas.length > 0) {
-                const cumpleForma = formasMencionadas.some(forma => textoProducto.includes(forma));
-                if (!cumpleForma) return false;
-            }
-
-            if (tamañosMencionados.length > 0) {
-                const cumpleTamaño = tamañosMencionados.some(tamaño => textoProducto.includes(tamaño));
-                if (!cumpleTamaño) return false;
-            }
-
-            if (!tienesCriteriosEspecificos && palabrasQuery.length > 0) {
-                return palabrasQuery.every(palabra => textoProducto.includes(palabra));
-            }
-
-            if (tienesCriteriosEspecificos) return true;
-
-            return false;
-        });
-    }
-
-    mostrarSugerencias(queryOriginal) {
-        const palabras = queryOriginal.toLowerCase().split(' ').filter(p => p.length > 2);
-        const similares = this.productos.filter(prod => {
-            const texto = `${prod.nombre} ${prod.color} ${prod.forma}`.toLowerCase();
-            return palabras.some(p => texto.includes(p));
-        }).slice(0, 3);
-
-        if (similares.length > 0) {
-            this.agregarMensaje('bot', 'No hay coincidencias exactas, pero estos podrían interesarte:');
-            this.mostrarProductosEnChat(similares);
-        }
-    }
-
     async llamarGemini(query, productosEncontrados) {
         try {
+            const productosInfo = this.productos.map(p => 
+                `Producto: ${p.nombre} | Colores: ${p.color} | Forma: ${p.forma} | Tamaño: ${p.tamaño}`
+            ).join('\n');
+
+            const promptAnalisis = `Eres un asistente de The Latte Bear Nails. Analiza esta consulta y encuentra productos que coincidan.
+
+CONSULTA: "${query}"
+
+PRODUCTOS DISPONIBLES:
+${productosInfo}
+
+INSTRUCCIONES:
+- Busca coincidencias FLEXIBLES con sinónimos
+- "floral" → "flores", "rosas", "floreado"  
+- "almendra" → "almendrada", "ovalada"
+- "elegante" → "nude", "clásico", "french"
+- "largo" → "largas", "extendidas"
+- IGNORA mayúsculas/minúsculas y errores ortográficos
+
+Responde con este formato:
+PRODUCTOS_COINCIDENTES: [nombres de productos separados por coma]
+RESPUESTA: [respuesta amigable mencionando los productos encontrados]`;
+
             const response = await fetch('/api/gemini/', {
                 method: 'POST',
                 headers: {
@@ -248,25 +161,46 @@ class ChatbotInteligente {
                     'X-CSRFToken': this.getCsrfToken()
                 },
                 body: JSON.stringify({
-                    message: query,
-                    productos_encontrados: productosEncontrados.length,
-                    contexto: 'tienda_uñas'
+                    message: promptAnalisis,
+                    productos_encontrados: 0,
+                    contexto: 'analisis_busqueda'
                 })
             });
 
-            const data = await response.json();
+            if (!response.ok) throw new Error('Error en el servidor');
             
-            if (response.ok) {
-                return data.response;
-            } else {
-                throw new Error(data.error || 'Error en el servidor');
+            const data = await response.json();
+            const respuestaCompleta = data.response;
+            const lineas = respuestaCompleta.split('\n');
+            const productosCoincidentes = [];
+
+            for (const linea of lineas) {
+                if (linea.startsWith('PRODUCTOS_COINCIDENTES:')) {
+                    const productosStr = linea.replace('PRODUCTOS_COINCIDENTES:', '').trim();
+                    const nombres = productosStr.split(',').map(n => n.trim()).filter(n => n);
+                    
+                    nombres.forEach(nombreProducto => {
+                        const encontrado = this.productos.find(p => 
+                            p.nombre.toLowerCase().includes(nombreProducto.toLowerCase())
+                        );
+                        if (encontrado) productosCoincidentes.push(encontrado);
+                    });
+                    break;
+                }
             }
-        } catch (error) {
-            if (productosEncontrados.length > 0) {
-                return `Encontré ${productosEncontrados.length} producto${productosEncontrados.length === 1 ? '' : 's'} para "${query}"`;
-            } else {
-                return `No encontré productos exactos para "${query}". Prueba con otros colores, formas o nombres.`;
+
+            if (productosCoincidentes.length > 0) {
+                setTimeout(() => {
+                    this.mostrarProductosEnChat(productosCoincidentes);
+                    this.filtrarPagina(productosCoincidentes);
+                }, 100);
             }
+
+            const respuestaLinea = lineas.find(linea => linea.startsWith('RESPUESTA:'));
+            return respuestaLinea ? respuestaLinea.replace('RESPUESTA:', '').trim() : respuestaCompleta;
+
+        } catch {
+            return 'No pude buscar productos en este momento. Intenta con otras palabras.';
         }
     }
 
@@ -291,7 +225,7 @@ class ChatbotInteligente {
         mostrar.forEach(p => {
             html += `
                 <div onclick="mostrarDetalleProducto('${p.id}'); document.getElementById('chatBotModal').style.display='none';" 
-                     style="background: white; border-radius: 10px; padding: 10px; cursor: pointer; border: 2px solid #ffe4f4; transition: all 0.3s; position: relative;">
+                     style="background: white; border-radius: 10px; padding: 10px; cursor: pointer; border: 2px solid #ffe4f4; position: relative;">
                     <img src="${p.imagen}" 
                          onerror="this.style.display='none'" 
                          style="width: 100%; height: 70px; object-fit: cover; border-radius: 8px; margin-bottom: 8px;">
@@ -317,7 +251,7 @@ class ChatbotInteligente {
 
         const div = document.createElement('div');
         div.className = 'bot-message';
-        div.innerHTML = `<div class="message-bubble" style="background: transparent !important; box-shadow: none !important; max-width: 95% !important; padding: 10px 5px !important;">${html}</div>`;
+        div.innerHTML = `<div class="message-bubble" style="background: transparent; box-shadow: none; max-width: 95%; padding: 10px 5px;">${html}</div>`;
         messages.appendChild(div);
         this.scrollChat();
     }
@@ -326,7 +260,6 @@ class ChatbotInteligente {
         document.querySelectorAll('.producto-card').forEach(card => {
             card.style.opacity = '0.3';
             card.style.filter = 'grayscale(80%)';
-            card.style.transition = 'all 0.5s ease';
         });
 
         productos.forEach(p => {
@@ -350,15 +283,13 @@ class ChatbotInteligente {
             card.style.boxShadow = '';
             card.style.transform = '';
         });
-        const btn = document.getElementById('btn-reset-filtro');
-        if (btn) btn.remove();
+        document.getElementById('btn-reset-filtro')?.remove();
     }
 
     agregarBotonQuitarFiltro() {
-        let btn = document.getElementById('btn-reset-filtro');
-        if (btn) btn.remove();
+        document.getElementById('btn-reset-filtro')?.remove();
 
-        btn = document.createElement('button');
+        const btn = document.createElement('button');
         btn.id = 'btn-reset-filtro';
         btn.innerHTML = '✕ Mostrar todos';
         btn.style.cssText = `
@@ -403,29 +334,15 @@ class ChatbotInteligente {
 
     scrollChat() {
         const messages = document.getElementById('chatBotMessages');
-        if (!messages) return;
-        
-        setTimeout(() => {
-            messages.scrollTop = messages.scrollHeight;
-        }, 100);
+        if (messages) setTimeout(() => messages.scrollTop = messages.scrollHeight, 100);
     }
 }
 
 window.chatbotInteligente = new ChatbotInteligente();
+window.openChatbot = () => window.chatbotInteligente?.open();
+window.closeChatbot = () => window.chatbotInteligente?.close();
 
-window.openChatbot = function() {
-    if (window.chatbotInteligente) {
-        window.chatbotInteligente.open();
-    }
-};
-
-window.closeChatbot = function() {
-    if (window.chatbotInteligente) {
-        window.chatbotInteligente.close();
-    }
-};
-
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', () => {
     const chatbotModal = document.getElementById('chatBotModal');
     if (chatbotModal && chatbotModal.parentNode !== document.body) {
         document.body.appendChild(chatbotModal);

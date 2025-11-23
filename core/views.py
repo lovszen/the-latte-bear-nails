@@ -17,18 +17,25 @@ def gemini_proxy(request):
         if not user_message:
             return JsonResponse({'error': 'No message provided'}, status=400)
         
-        if contexto == 'tienda_uñas':
-            prompt = f"""Eres un asistente especializado en uñas postizas y productos de belleza.
+        if contexto == 'analisis_busqueda':
+            prompt = f"""Eres un asistente de The Latte Bear Nails, tienda de uñas postizas.
 
-Usuario pregunta: "{user_message}"
-Productos encontrados en la tienda: {productos_count}
+{user_message}
 
-Responde de forma amigable y útil, enfocada en uñas y belleza.
-Máximo 2 líneas. Sé entusiasta."""
+Analiza la consulta del usuario y encuentra productos que coincidan FLEXIBLEMENTE.
+Busca sinónimos y palabras relacionadas.
+
+Responde EXCLUSIVAMENTE en este formato:
+PRODUCTOS_COINCIDENTES: [nombres de productos separados por coma]
+RESPUESTA: [respuesta amigable mencionando los productos encontrados]
+
+Ejemplo:
+PRODUCTOS_COINCIDENTES: Set Almendra Floral, Set Coffin Rosa
+RESPUESTA: ¡Encontré estos sets preciosos para ti! Tenemos diseños florales y colores rosados que te encantarán 💅"""
         else:
             prompt = user_message
         
-        url = f"https://generativelanguage.googleapis.com/v1/models/gemini-pro:generateContent?key={settings.GEMINI_API_KEY}"
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={settings.GEMINI_API_KEY}"
         
         payload = {
             "contents": [{
@@ -36,7 +43,7 @@ Máximo 2 líneas. Sé entusiasta."""
             }],
             "generationConfig": {
                 "temperature": 0.8,
-                "maxOutputTokens": 150
+                "maxOutputTokens": 500
             }
         }
         
