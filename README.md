@@ -8,41 +8,52 @@ Marketplace Local de productos de uñas "press on" con integración de pagos y c
 Este proyecto fue desarrollado como trabajo en equipo durante mi formación universitaria.
 Lideré el desarrollo frontend y de interfaces en este proyecto colaborativo.
 
+# Tecnologías
+
+- Python, Django
+
+- HTML5, CSS3
+
+- Bootstrap 
+
+- JavaScript 
+
+- MySQL 
 
 # Mis colaboraciones
 
 # Diseño y desarrollo de frontend completo.
 
 
-Rediseñé todas las interfaces desde cero
+- Rediseñé todas las interfaces desde cero
 
-Creé una landing page atractiva con autenticación social
+- Creé una landing page atractiva con autenticación social
 
-Desarrollé la tienda online completa con catálogo y carrito
+- Desarrollé la tienda online completa con catálogo y carrito
 
-Implementé el sistema de uñas personalizadas con guías de medidas
+- Implementé el sistema de uñas personalizadas con guías de medidas
 
-Mejoré la interfaz del chat existente
+- Mejoré la interfaz del chat existente
 
 # Sistema de Administración
 
 
-Desarrollé un panel administrativo exclusivo con permisos
+- Desarrollé un panel administrativo exclusivo con permisos
 
-Implementé un gestor completo de productos
+- Implementé un gestor completo de productos
 
-Creé un sistema de cotizaciones manuales para personalizados
+- Creé un sistema de cotizaciones manuales para personalizados
 
-Diseñé un dashboard con métricas y accesos rápidos
+- Diseñé un dashboard con métricas y accesos rápidos
 
 # Extras
 
 
-Integré Cloudinary para gestión de imágenes
+- Integré Cloudinary para gestión de imágenes
 
-Integré un chat bot con IA 
+- Integré un chat bot con IA 
 
-Contribuí en la gestión de presupuestos del panel admin
+- Contribuí en la gestión de presupuestos del panel admin
 
 # Funcionalidades Clave
 
